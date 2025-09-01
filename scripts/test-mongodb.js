@@ -180,7 +180,7 @@ async function testConnection() {
     console.log('📋 Database Info:');
     console.log(`   Database: ${db.databaseName}`);
     console.log(`   Collections: ${collections.length}`);
-    console.log(`   Connection: ${MONGODB_URI.replace(/\/\/.*@/, '//***:***@')}`);
+    console.log(`   Connection: ${MONGODB_URI.replace(/\/\/[^@]+@/, '//***:***@')}`);
     console.log('');
     console.log('🚀 Ready to switch from in-memory to persistent storage!');
 
@@ -193,8 +193,8 @@ async function testConnection() {
     console.log('   3. Ensure network access is configured (0.0.0.0/0)');
     console.log('   4. Check if the cluster is running');
     console.log('');
-    console.log('💡 Connection string should look like:');
-    console.log('   mongodb+srv://username:password@cluster.mongodb.net/chatguuspt');
+    console.log('💡 Connection string format:');
+    console.log('   mongodb+srv://<username>:<password>@<cluster>.<id>.mongodb.net/chatguuspt');
     
     process.exit(1);
   } finally {

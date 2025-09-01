@@ -41,10 +41,17 @@ This guide helps you set up MongoDB Atlas for ChatGuusPT's persistent data stora
 5. Replace `<password>` with your user password
 6. Replace `<database>` with `chatguuspt`
 
-Example connection string:
+Example connection string format:
 ```
-mongodb+srv://chatguuspt-user:YOUR_PASSWORD@chatguuspt-cluster.abc123.mongodb.net/chatguuspt?retryWrites=true&w=majority
+mongodb+srv://<username>:<password>@<cluster-name>.<cluster-id>.mongodb.net/<database>?retryWrites=true&w=majority
 ```
+
+Replace the placeholders with your actual values:
+- `<username>`: Your database username
+- `<password>`: Your database password  
+- `<cluster-name>`: Your cluster name
+- `<cluster-id>`: Generated cluster identifier
+- `<database>`: Database name (use `chatguuspt`)
 
 ## 🔧 **Netlify Configuration**
 

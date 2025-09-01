@@ -52,6 +52,7 @@ jobs:
       uses: nwtgck/actions-netlify@v3.0
       with:
         publish-dir: './dist'
+        functions-dir: './netlify/functions'
         production-branch: main
         github-token: ${{ secrets.GITHUB_TOKEN }}
         deploy-message: "🚀 Production Deploy: ${{ github.event.head_commit.message }}"
@@ -67,6 +68,7 @@ jobs:
       uses: nwtgck/actions-netlify@v3.0
       with:
         publish-dir: './dist'
+        functions-dir: './netlify/functions'
         production-branch: main
         github-token: ${{ secrets.GITHUB_TOKEN }}
         deploy-message: "🔍 Preview Deploy: ${{ github.event.head_commit.message || github.event.pull_request.title }}"

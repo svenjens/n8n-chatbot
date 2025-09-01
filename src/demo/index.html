@@ -291,11 +291,11 @@
             <div class="code-block">
 &lt;!-- Voeg dit toe aan je HTML --&gt;
 &lt;div id="chatguus-widget"&gt;&lt;/div&gt;
-&lt;script src="https://jouw-domain.com/widget.js"&gt;&lt;/script&gt;
+&lt;script src="https://chatguuspt.netlify.app/.netlify/functions/widget"&gt;&lt;/script&gt;
 &lt;script&gt;
   ChatGuus.init({
     target: '#chatguus-widget',
-    webhookUrl: 'https://jouw-n8n-instance.com/webhook/chatguus',
+    webhookUrl: 'https://chatguuspt.netlify.app/.netlify/functions/chat',
     theme: 'koepel',
     welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen?'
   });
@@ -306,7 +306,7 @@
             <div class="code-block">
 ChatGuus.init({
   target: '#chatguus-widget',
-  webhookUrl: 'YOUR_WEBHOOK_URL',
+  webhookUrl: 'https://chatguuspt.netlify.app/.netlify/functions/chat',
   primaryColor: '#2563eb',
   position: 'bottom-right',
   avatar: '/path/to/guus-avatar.png',

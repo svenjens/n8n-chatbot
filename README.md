@@ -259,7 +259,7 @@ const analytics = await fetch('/.netlify/functions/ai-analytics?action=export_da
 - **Performance Tracking**: Measure satisfaction and effectiveness
 - **Data-Driven Decisions**: Use analytics for chatbot optimization
 
-**Live Dashboard**: [Analytics Dashboard](https://chatguuspt.netlify.app/src/admin/analytics-dashboard.html)
+**Live Dashboard**: [Analytics Dashboard](https://chatguuspt.netlify.app/admin/analytics-dashboard.html)
 
 ---
 
@@ -399,8 +399,8 @@ npm run dev:netlify # Netlify Functions local development
 ### **3. Website Integration**
 ```html
 <!-- Single line integration -->
-<script src="https://your-domain.netlify.app/.netlify/functions/widget"></script>
-<script>ChatGuus.init({ theme: 'your-brand' });</script>
+<script src="https://chatguuspt.netlify.app/.netlify/functions/widget"></script>
+<script>ChatGuus.init({ theme: 'koepel' });</script>
 ```
 
 ---
@@ -514,7 +514,7 @@ export function ChatBotProvider({ tenantId = 'default' }) {
 function chatguus_enqueue_widget() {
     wp_enqueue_script(
         'chatguus-widget',
-        'https://your-domain.netlify.app/.netlify/functions/widget',
+        'https://chatguuspt.netlify.app/.netlify/functions/widget',
         [],
         '1.0.0',
         true
@@ -526,7 +526,7 @@ add_action('wp_enqueue_scripts', 'chatguus_enqueue_widget');
 ### **Shopify Integration**
 ```liquid
 <!-- Add to theme.liquid -->
-<script src="https://your-domain.netlify.app/.netlify/functions/widget?tenant=shopify"></script>
+<script src="https://chatguuspt.netlify.app/.netlify/functions/widget?tenant=koepel"></script>
 <script>
   ChatGuus.init({
     features: ['productSupport', 'orderTracking', 'returns'],

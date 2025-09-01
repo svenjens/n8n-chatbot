@@ -355,15 +355,15 @@ curl -X POST http://localhost:8888/.netlify/functions/chat \
 
 ```bash
 # Test deployed functions
-curl -X POST https://jouw-site.netlify.app/.netlify/functions/chat \
+curl -X POST https://chatguuspt.netlify.app/.netlify/functions/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"Hallo Guus","sessionId":"prod-test"}'
 
 # Test widget loading
-curl -I https://jouw-site.netlify.app/.netlify/functions/widget
+curl -I https://chatguuspt.netlify.app/.netlify/functions/widget
 
 # Test health endpoint
-curl https://jouw-site.netlify.app/.netlify/functions/health
+curl https://chatguuspt.netlify.app/.netlify/functions/health
 ```
 
 ## 🔄 CI/CD met Netlify
@@ -479,7 +479,7 @@ console.log('Environment check:', {
 
 4. **Test Multi-Tenant:**
    ```
-   https://jouw-site.netlify.app/.netlify/functions/widget?tenant=demo-company
+   https://chatguuspt.netlify.app/.netlify/functions/widget?tenant=demo-company
    ```
 
 ## 📞 Netlify Support

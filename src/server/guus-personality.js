@@ -86,17 +86,24 @@ Reageer altijd in het Nederlands en blijf in karakter als de gastvrije Guus.`;
 Bericht: "${message}"
 
 Categorieën:
-- service_request: Verzoek om hulp, probleem melden, iets regelen
-- event_inquiry: Vragen over evenementen organiseren, ruimte huren
-- faq: Algemene vragen over faciliteiten, locatie, openingstijden
-- general: Begroeting, algemene conversatie
+- service_request: Expliciet verzoek om hulp, probleem melden, technische ondersteuning nodig
+- event_inquiry: Specifieke vragen over evenementen organiseren, ruimte huren voor events
+- faq: Algemene vragen over faciliteiten, locatie, openingstijden, informatie
+- general: Begroeting, algemene conversatie, complimenten, dank je wel
+
+BELANGRIJKE REGELS:
+- Gebruik 'general' voor begroetingen, bedankjes, complimenten
+- Alleen 'service_request' bij duidelijke hulpvragen of problemen
+- Hoge confidence (>0.8) alleen bij zeer duidelijke intents
+- requiresForm: false voor algemene service vragen die geen formulier nodig hebben
 
 Geef terug als JSON:
 {
   "type": "category",
   "confidence": 0.0-1.0,
-  "category": "subcategory if applicable",
+  "category": "subcategory if applicable", 
   "hasCompleteInfo": boolean,
+  "requiresForm": boolean,
   "keywords": ["relevant", "keywords"]
 }`;
 
@@ -114,15 +121,27 @@ Geef terug als JSON:
     } catch (error) {
       console.error('Intent Analysis Error:', error);
       
-      // Fallback intent detection
+      // Fallback intent detection - more conservative
       const lowerMessage = message.toLowerCase();
       
-      if (lowerMessage.includes('service') || lowerMessage.includes('hulp') || lowerMessage.includes('probleem')) {
-        return { type: 'service_request', confidence: 0.7, hasCompleteInfo: false };
-      } else if (lowerMessage.includes('event') || lowerMessage.includes('organiseren') || lowerMessage.includes('ruimte')) {
-        return { type: 'event_inquiry', confidence: 0.7, hasCompleteInfo: false };
-      } else {
-        return { type: 'general', confidence: 0.5, hasCompleteInfo: false };
+      // Check for explicit service requests
+      if ((lowerMessage.includes('probleem') || lowerMessage.includes('defect') || lowerMessage.includes('kapot')) && 
+          (lowerMessage.includes('hulp') || lowerMessage.includes('repareren') || lowerMessage.includes('oplossen'))) {
+        return { type: 'service_request', confidence: 0.6, hasCompleteInfo: false, requiresForm: true };
+      } 
+      // Check for event inquiries
+      else if (lowerMessage.includes('evenement') || lowerMessage.includes('event') || 
+               (lowerMessage.includes('organiseren') && lowerMessage.includes('ruimte'))) {
+        return { type: 'event_inquiry', confidence: 0.6, hasCompleteInfo: false, requiresForm: true };
+      }
+      // Check for greetings and general conversation
+      else if (lowerMessage.includes('hallo') || lowerMessage.includes('hi') || lowerMessage.includes('hey') ||
+               lowerMessage.includes('dank') || lowerMessage.includes('bedankt') || lowerMessage.includes('goed')) {
+        return { type: 'general', confidence: 0.8, hasCompleteInfo: false, requiresForm: false };
+      }
+      // Default to general for ambiguous messages
+      else {
+        return { type: 'general', confidence: 0.5, hasCompleteInfo: false, requiresForm: false };
       }
     }
   }

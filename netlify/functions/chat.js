@@ -116,10 +116,14 @@ export const handler = async (event, context) => {
     switch (intent.type) {
       case 'service_request':
         response = await guusPersonality.handleServiceRequest(sanitizedMessage, intent);
-        action = {
-          type: 'service_request_form',
-          category: intent.category
-        };
+        
+        // Only show service request form if confidence is high and it's clearly a service request
+        if (intent.confidence > 0.8 && intent.requiresForm !== false) {
+          action = {
+            type: 'service_request_form',
+            category: intent.category
+          };
+        }
         
         // Route email if enough information
         if (intent.hasCompleteInfo) {
@@ -130,8 +134,10 @@ export const handler = async (event, context) => {
               userAgent,
               url
             });
-            action.emailSent = true;
-            action.department = routingResult.department;
+            if (action) {
+              action.emailSent = true;
+              action.department = routingResult.department;
+            }
           } catch (emailError) {
             console.error('Email routing failed:', emailError);
             // Continue without email routing
@@ -141,9 +147,13 @@ export const handler = async (event, context) => {
 
       case 'event_inquiry':
         response = await guusPersonality.handleEventInquiry(sanitizedMessage, intent);
-        action = {
-          type: 'event_inquiry_form'
-        };
+        
+        // Only show event inquiry form if confidence is high and it's clearly an event request
+        if (intent.confidence > 0.8 && intent.requiresForm !== false) {
+          action = {
+            type: 'event_inquiry_form'
+          };
+        }
         
         // Route to events team if complete
         if (intent.hasCompleteInfo) {
@@ -154,8 +164,10 @@ export const handler = async (event, context) => {
               userAgent,
               url
             });
-            action.emailSent = true;
-            action.department = 'Events Team';
+            if (action) {
+              action.emailSent = true;
+              action.department = 'Events Team';
+            }
           } catch (emailError) {
             console.error('Event email routing failed:', emailError);
           }

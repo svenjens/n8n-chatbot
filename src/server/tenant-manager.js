@@ -41,7 +41,10 @@ export class TenantManager {
         eventInquiries: true,
         faqSystem: true,
         emailRouting: true,
-        googleSheets: true
+        googleSheets: true,
+        satisfactionRatings: true,
+        analytics: true,
+        aiSelfRating: true
       },
       n8nConfig: {
         webhookUrl: process.env.N8N_WEBHOOK_URL_KOEPEL,
@@ -80,7 +83,10 @@ export class TenantManager {
         eventInquiries: false,
         faqSystem: true,
         emailRouting: true,
-        googleSheets: false
+        googleSheets: false,
+        satisfactionRatings: true,
+        analytics: true,
+        aiSelfRating: true
       },
       n8nConfig: {
         webhookUrl: process.env.N8N_WEBHOOK_URL_DEMO,

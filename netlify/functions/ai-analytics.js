@@ -1,17 +1,24 @@
 /**
  * Netlify Function for AI Analytics & Self-Rating Data
  * Handles AI self-ratings, missing answers, and dashboard analytics
+ * Now with MongoDB Atlas persistent storage
  */
 
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { 
+  AIRatingsDB, 
+  MissingAnswersDB, 
+  SatisfactionRatingsDB,
+  ChatSessionsDB,
+  connectToDatabase,
+  healthCheck 
+} from '../../src/utils/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// In-memory storage for demo (replace with database in production)
-let aiRatings = [];
-let missingAnswers = [];
+// Cache for dashboard data (5 minute TTL)
 let dashboardCache = null;
 let cacheTimestamp = null;
 
@@ -59,6 +66,9 @@ export const handler = async (event, context) => {
       case 'update_missing_answer_status':
         return handleUpdateMissingAnswerStatus(body, headers);
         
+      case 'health_check':
+        return handleHealthCheck(headers);
+        
       default:
         return {
           statusCode: 400,
@@ -100,12 +110,8 @@ async function handleStoreAIRating(data, headers) {
       ...data
     };
 
-    aiRatings.push(rating);
-    
-    // Keep only last 1000 ratings to prevent memory issues
-    if (aiRatings.length > 1000) {
-      aiRatings = aiRatings.slice(-1000);
-    }
+    // Store in MongoDB
+    const ratingId = await AIRatingsDB.create(rating);
     
     // Invalidate cache
     dashboardCache = null;
@@ -120,14 +126,15 @@ async function handleStoreAIRating(data, headers) {
       headers,
       body: JSON.stringify({ 
         success: true, 
-        ratingId: rating.id,
-        message: 'AI rating stored successfully'
+        ratingId: ratingId.toString(),
+        message: 'AI rating stored successfully in MongoDB'
       })
     };
 
   } catch (error) {
+    console.error('Store AI rating error:', error);
     return {
-      statusCode: 400,
+      statusCode: 500,
       headers,
       body: JSON.stringify({ 
         error: 'Failed to store AI rating',
@@ -208,44 +215,44 @@ async function handleStoreMissingAnswer(data, headers) {
  */
 async function handleGetAIRatings(params, headers) {
   try {
-    let filteredRatings = [...aiRatings];
-    
-    // Apply filters
+    // Build query filters
+    const query = {};
     if (params.tenantId && params.tenantId !== 'all') {
-      filteredRatings = filteredRatings.filter(r => r.tenantId === params.tenantId);
+      query.tenantId = params.tenantId;
     }
-    
     if (params.category && params.category !== 'all') {
-      filteredRatings = filteredRatings.filter(r => r.rating?.category === params.category);
+      query['rating.category'] = params.category;
     }
-    
+
+    // Build options
+    const options = {
+      limit: parseInt(params.limit) || 50,
+      skip: ((parseInt(params.page) || 1) - 1) * (parseInt(params.limit) || 50),
+      sort: { createdAt: -1 }
+    };
+
     if (params.period) {
-      const cutoffDate = getPeriodCutoff(params.period);
-      filteredRatings = filteredRatings.filter(r => new Date(r.timestamp) >= cutoffDate);
+      options.period = params.period;
     }
-    
-    // Sort by timestamp (newest first)
-    filteredRatings.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
-    // Pagination
-    const page = parseInt(params.page) || 1;
-    const limit = parseInt(params.limit) || 50;
-    const startIndex = (page - 1) * limit;
-    const paginatedRatings = filteredRatings.slice(startIndex, startIndex + limit);
+
+    // Get ratings from MongoDB
+    const ratings = await AIRatingsDB.find(query, options);
+    const total = await AIRatingsDB.count(query);
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        ratings: paginatedRatings,
-        total: filteredRatings.length,
-        page,
-        limit,
-        totalPages: Math.ceil(filteredRatings.length / limit)
+        ratings,
+        total,
+        page: parseInt(params.page) || 1,
+        limit: parseInt(params.limit) || 50,
+        totalPages: Math.ceil(total / (parseInt(params.limit) || 50))
       })
     };
 
   } catch (error) {
+    console.error('Get AI ratings error:', error);
     return {
       statusCode: 500,
       headers,
@@ -331,8 +338,8 @@ async function handleGetDashboardData(params, headers) {
       };
     }
     
-    // Calculate analytics
-    const analytics = calculateAnalytics(params);
+    // Calculate analytics from MongoDB
+    const analytics = await calculateAnalyticsFromDB(params);
     
     // Cache the result
     dashboardCache = analytics;
@@ -345,6 +352,7 @@ async function handleGetDashboardData(params, headers) {
     };
 
   } catch (error) {
+    console.error('Get dashboard data error:', error);
     return {
       statusCode: 500,
       headers,
@@ -435,7 +443,93 @@ async function handleUpdateMissingAnswerStatus(data, headers) {
 }
 
 /**
- * Calculate comprehensive analytics
+ * Calculate comprehensive analytics from MongoDB
+ */
+async function calculateAnalyticsFromDB(filters = {}) {
+  try {
+    // Build query filters
+    const query = {};
+    if (filters.tenantId && filters.tenantId !== 'all') {
+      query.tenantId = filters.tenantId;
+    }
+
+    // Get AI ratings analytics
+    const aiAnalytics = await AIRatingsDB.getAnalytics(query);
+    const trends = await AIRatingsDB.getTrends(query);
+    const categoryBreakdown = await AIRatingsDB.getCategoryBreakdown(query);
+
+    // Get missing answers analytics
+    const missingAnswersAnalytics = await MissingAnswersDB.getAnalytics(query);
+    const missingAnswersList = await MissingAnswersDB.find(query, { limit: 20 });
+
+    // Get satisfaction analytics
+    const satisfactionAnalytics = await SatisfactionRatingsDB.getAnalytics(query);
+
+    return {
+      summary: {
+        totalRatings: aiAnalytics.totalRatings,
+        averageAIRating: parseFloat((aiAnalytics.avgOverall || 0).toFixed(2)),
+        averageConfidence: parseFloat(((aiAnalytics.avgConfidence || 0) * 100).toFixed(1)),
+        userSatisfactionRate: satisfactionAnalytics.satisfactionRate || 0,
+        missingAnswersCount: missingAnswersAnalytics.total
+      },
+      aiRatings: {
+        total: aiAnalytics.totalRatings,
+        averages: {
+          overall: parseFloat((aiAnalytics.avgOverall || 0).toFixed(2)),
+          accuracy: parseFloat((aiAnalytics.avgAccuracy || 0).toFixed(2)),
+          helpfulness: parseFloat((aiAnalytics.avgHelpfulness || 0).toFixed(2)),
+          completeness: parseFloat((aiAnalytics.avgCompleteness || 0).toFixed(2)),
+          clarity: parseFloat((aiAnalytics.avgClarity || 0).toFixed(2)),
+          relevance: parseFloat((aiAnalytics.avgRelevance || 0).toFixed(2)),
+          confidence: parseFloat(((aiAnalytics.avgConfidence || 0) * 100).toFixed(1))
+        },
+        categoryBreakdown: categoryBreakdown.reduce((acc, cat) => {
+          acc[cat.category] = {
+            count: cat.count,
+            avgRating: cat.avgRating
+          };
+          return acc;
+        }, {}),
+        confidenceDistribution: calculateConfidenceDistribution(aiAnalytics.categories || []),
+        trends: trends
+      },
+      missingAnswers: {
+        total: missingAnswersAnalytics.total,
+        highPriority: missingAnswersAnalytics.highPriority,
+        mediumPriority: missingAnswersAnalytics.mediumPriority,
+        lowPriority: missingAnswersAnalytics.lowPriority,
+        list: missingAnswersList,
+        categories: getCategoriesFromMissingAnswers(missingAnswersAnalytics.categories || [])
+      },
+      satisfaction: satisfactionAnalytics,
+      filters: filters,
+      lastUpdated: new Date().toISOString()
+    };
+
+  } catch (error) {
+    console.error('Calculate analytics error:', error);
+    // Return empty analytics on error
+    return {
+      summary: {
+        totalRatings: 0,
+        averageAIRating: 0,
+        averageConfidence: 0,
+        userSatisfactionRate: 0,
+        missingAnswersCount: 0
+      },
+      aiRatings: { total: 0, averages: {}, categoryBreakdown: {}, confidenceDistribution: {}, trends: [] },
+      missingAnswers: { total: 0, list: [], categories: {} },
+      satisfaction: { totalRatings: 0, avgRating: 0, satisfactionRate: 0 },
+      filters: filters,
+      lastUpdated: new Date().toISOString(),
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Calculate comprehensive analytics (legacy function for fallback)
  */
 function calculateAnalytics(filters = {}) {
   let filteredRatings = [...aiRatings];
@@ -544,14 +638,14 @@ async function checkForMissingAnswer(rating) {
       aiResponse: rating.aiResponse,
       category: rating.rating.category,
       priority: calculatePriority(rating.rating),
-      frequency: 1,
       status: 'needs_review',
       tenantId: rating.tenantId,
       sessionId: rating.sessionId,
       rating: rating.rating
     };
     
-    await handleStoreMissingAnswer(missingAnswer, {});
+    // Store in MongoDB
+    await MissingAnswersDB.create(missingAnswer);
   }
 }
 
@@ -666,4 +760,66 @@ function getTopMissingQuestions(missingAnswers) {
 function calculateUserSatisfactionRate() {
   // Mock calculation - in real implementation, get from satisfaction ratings
   return 87; // 87% satisfaction rate
+}
+
+/**
+ * Calculate confidence distribution from categories array
+ */
+function calculateConfidenceDistribution(categories) {
+  const distribution = { high: 0, medium: 0, low: 0 };
+  
+  categories.forEach(cat => {
+    if (cat.confidence >= 0.8) distribution.high++;
+    else if (cat.confidence >= 0.6) distribution.medium++;
+    else distribution.low++;
+  });
+  
+  return distribution;
+}
+
+/**
+ * Get categories breakdown from missing answers
+ */
+function getCategoriesFromMissingAnswers(categoriesArray) {
+  const categories = {};
+  categoriesArray.forEach(cat => {
+    if (!categories[cat.category]) {
+      categories[cat.category] = { count: 0, highPriority: 0 };
+    }
+    categories[cat.category].count++;
+    if (cat.priority === 'high') {
+      categories[cat.category].highPriority++;
+    }
+  });
+  return categories;
+}
+
+/**
+ * Health check endpoint
+ */
+async function handleHealthCheck(headers) {
+  try {
+    const dbHealth = await healthCheck();
+    
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        status: 'healthy',
+        database: dbHealth,
+        timestamp: new Date().toISOString(),
+        version: '2.0.0-mongodb'
+      })
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        status: 'unhealthy',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      })
+    };
+  }
 }

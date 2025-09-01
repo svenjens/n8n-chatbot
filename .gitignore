@@ -121,6 +121,9 @@ coverage/
 # N8N exports (sensitive)
 n8n-export-*.json
 
+# MongoDB connection info (sensitive)
+mongodb-connection-info.txt
+
 # Local development
 .local/
 dev-notes.md

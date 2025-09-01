@@ -384,7 +384,8 @@ resource "aws_lambda_function" "chatbot" {
 git clone https://github.com/your-username/chatguuspt
 cd chatguuspt
 npm install
-npm run setup  # Interactive configuration wizard
+npm run setup:mongodb  # Setup MongoDB Atlas database
+npm run setup          # Interactive configuration wizard
 ```
 
 ### **2. Development**
@@ -561,6 +562,7 @@ add_action('wp_enqueue_scripts', 'chatguus_enqueue_widget');
 ## 📚 **Documentation & Resources**
 
 ### **📖 Comprehensive Guides**
+- [**MongoDB Atlas Setup**](docs/mongodb-setup.md): Database configuration and management
 - [**N8N Workflow Setup**](docs/n8n-setup.md): Complete automation configuration
 - [**Netlify Deployment**](docs/netlify-deployment.md): Serverless deployment guide
 - [**Technical Architecture**](docs/ARCHITECTURE.md): System design and engineering decisions

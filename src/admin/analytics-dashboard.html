@@ -384,6 +384,14 @@
                 </select>
             </div>
             
+            <div class="filter-group">
+                <label class="filter-label">Data Bron</label>
+                <select class="filter-select" id="dataSourceFilter">
+                    <option value="live">Live Data</option>
+                    <option value="demo">Demo Data</option>
+                </select>
+            </div>
+            
             <div class="export-buttons">
                 <button class="export-btn" onclick="exportData('csv')">
                     <i class="fas fa-download"></i> CSV
@@ -516,6 +524,7 @@
             document.getElementById('tenantFilter').addEventListener('change', applyFilters);
             document.getElementById('periodFilter').addEventListener('change', applyFilters);
             document.getElementById('categoryFilter').addEventListener('change', applyFilters);
+            document.getElementById('dataSourceFilter').addEventListener('change', applyFilters);
             
             // Auto-refresh every 5 minutes
             setInterval(refreshDashboard, 5 * 60 * 1000);
@@ -529,18 +538,27 @@
                 const tenantId = document.getElementById('tenantFilter')?.value || 'all';
                 const period = getPeriodValue();
                 const category = document.getElementById('categoryFilter')?.value || 'all';
+                const dataSource = document.getElementById('dataSourceFilter')?.value || 'live';
                 
-                // Load data from multiple sources with filters
-                const [aiRatingsData, satisfactionData, analyticsData] = await Promise.all([
-                    fetchAIRatings(tenantId, period, category),
-                    fetchSatisfactionRatings(tenantId, period),
-                    fetchAnalytics(tenantId, period)
-                ]);
-                
-                dashboardData.aiRatings = aiRatingsData;
-                dashboardData.satisfactionRatings = satisfactionData;
-                dashboardData.analytics = analyticsData;
-                dashboardData.missingAnswers = analyticsData.missingAnswers || [];
+                if (dataSource === 'demo') {
+                    // Use demo data
+                    dashboardData.aiRatings = generateMockAIRatings();
+                    dashboardData.satisfactionRatings = generateMockSatisfactionData();
+                    dashboardData.analytics = generateMockAnalytics();
+                    dashboardData.missingAnswers = dashboardData.analytics.missingAnswers || [];
+                } else {
+                    // Load real data from multiple sources with filters
+                    const [aiRatingsData, satisfactionData, analyticsData] = await Promise.all([
+                        fetchAIRatings(tenantId, period, category),
+                        fetchSatisfactionRatings(tenantId, period),
+                        fetchAnalytics(tenantId, period)
+                    ]);
+                    
+                    dashboardData.aiRatings = aiRatingsData;
+                    dashboardData.satisfactionRatings = satisfactionData;
+                    dashboardData.analytics = analyticsData;
+                    dashboardData.missingAnswers = analyticsData.missingAnswers || [];
+                }
                 
                 updateDashboard();
                 hideLoading();
@@ -654,16 +672,23 @@
                 document.body.appendChild(indicator);
             }
             
-            if (hasRealAIData && hasRealAnalytics) {
+            const dataSource = document.getElementById('dataSourceFilter')?.value || 'live';
+            
+            if (dataSource === 'demo') {
+                indicator.innerHTML = '🟡 Demo Data';
+                indicator.style.background = '#fffbe6';
+                indicator.style.color = '#faad14';
+                indicator.style.border = '1px solid #ffe58f';
+            } else if (hasRealAIData && hasRealAnalytics) {
                 indicator.innerHTML = '🟢 Live Data';
                 indicator.style.background = '#f6ffed';
                 indicator.style.color = '#52c41a';
                 indicator.style.border = '1px solid #b7eb8f';
             } else {
-                indicator.innerHTML = '🟡 Demo Data';
-                indicator.style.background = '#fffbe6';
-                indicator.style.color = '#faad14';
-                indicator.style.border = '1px solid #ffe58f';
+                indicator.innerHTML = '🔴 Geen Data';
+                indicator.style.background = '#fff2f0';
+                indicator.style.color = '#ff4d4f';
+                indicator.style.border = '1px solid #ffccc7';
             }
         }
         
@@ -704,19 +729,35 @@
                 charts.ratings.destroy();
             }
             
-            // Use real trend data if available
-            const trendData = dashboardData.analytics?.aiRatings?.trends || [];
-            const dates = trendData.length > 0 ? 
-                trendData.map(t => new Date(t.date)) : 
-                getLast30Days();
+            const dataSource = document.getElementById('dataSourceFilter')?.value || 'live';
             
-            const aiRatingData = trendData.length > 0 ?
-                trendData.map(t => parseFloat(t.avgRating) || 0) :
-                dates.map(() => Math.random() * 1 + 3.5); // Fallback to mock data
+            let dates, aiRatingData, satisfactionData;
+            
+            if (dataSource === 'demo') {
+                // Use demo data
+                dates = getLast30Days();
+                aiRatingData = dates.map(() => Math.random() * 1 + 3.5);
+                satisfactionData = dates.map(() => Math.random() * 20 + 75);
+            } else {
+                // Use real data from dashboardData
+                const analytics = dashboardData.analytics || {};
+                const trendData = analytics.trends?.daily || [];
+                const satisfactionTrends = dashboardData.satisfactionRatings?.trends?.daily || [];
                 
-            const satisfactionData = trendData.length > 0 ?
-                trendData.map(t => (parseFloat(t.avgRating) || 0) * 20 + 10) : // Convert to percentage
-                dates.map(() => Math.random() * 20 + 75); // Fallback to mock data
+                if (trendData.length > 0) {
+                    dates = trendData.map(t => new Date(t.date));
+                    aiRatingData = trendData.map(t => parseFloat(t.averageRating) || 0);
+                } else {
+                    dates = getLast30Days();
+                    aiRatingData = dates.map(() => 0); // No data
+                }
+                
+                if (satisfactionTrends.length > 0) {
+                    satisfactionData = satisfactionTrends.map(t => parseFloat(t.averageRating) * 20 || 0);
+                } else {
+                    satisfactionData = dates.map(() => 0); // No data
+                }
+            }
             
             charts.ratings = new Chart(ctx, {
                 type: 'line',
@@ -782,21 +823,38 @@
                 charts.category.destroy();
             }
             
-            // Use real category data if available
-            const realCategoryData = dashboardData.analytics?.aiRatings?.categoryBreakdown || {};
-            const categoryData = Object.keys(realCategoryData).length > 0 ? 
-                Object.fromEntries(
-                    Object.entries(realCategoryData).map(([key, value]) => [
-                        getCategoryDisplayName(key), 
-                        value.count || 0
-                    ])
-                ) : {
+            const dataSource = document.getElementById('dataSourceFilter')?.value || 'live';
+            
+            let categoryData;
+            
+            if (dataSource === 'demo') {
+                // Use demo data
+                categoryData = {
                     'Service Requests': 45,
                     'Event Vragen': 28,
                     'FAQ': 35,
                     'Algemeen': 22,
                     'Onbekend': 12
                 };
+            } else {
+                // Use real category data from analytics
+                const realCategoryData = dashboardData.analytics?.segmentation?.byCategory || 
+                                        dashboardData.analytics?.categoryBreakdown || {};
+                
+                if (Object.keys(realCategoryData).length > 0) {
+                    categoryData = Object.fromEntries(
+                        Object.entries(realCategoryData).map(([key, value]) => [
+                            getCategoryDisplayName(key), 
+                            value.count || value.total || value || 0
+                        ])
+                    );
+                } else {
+                    // No real data available
+                    categoryData = {
+                        'Geen Data': 1
+                    };
+                }
+            }
             
             charts.category = new Chart(ctx, {
                 type: 'doughnut',

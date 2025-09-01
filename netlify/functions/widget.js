@@ -14,12 +14,45 @@ let widgetCSS = null;
 function loadWidgetFiles() {
   if (!widgetContent) {
     try {
-      // Use relative paths from the function location
-      const widgetPath = '../../src/widget/chatguus.js';
-      const cssPath = '../../src/widget/chatguus.css';
+      // Try multiple possible paths
+      const possiblePaths = [
+        '../../src/widget/chatguus.js',
+        '../../../src/widget/chatguus.js', 
+        './src/widget/chatguus.js',
+        'src/widget/chatguus.js'
+      ];
       
-      widgetContent = fs.readFileSync(widgetPath, 'utf8');
-      widgetCSS = fs.readFileSync(cssPath, 'utf8');
+      const possibleCSSPaths = [
+        '../../src/widget/chatguus.css',
+        '../../../src/widget/chatguus.css',
+        './src/widget/chatguus.css', 
+        'src/widget/chatguus.css'
+      ];
+      
+      let widgetPath, cssPath;
+      
+      // Find the correct path
+      for (const path of possiblePaths) {
+        if (fs.existsSync(path)) {
+          widgetPath = path;
+          break;
+        }
+      }
+      
+      for (const path of possibleCSSPaths) {
+        if (fs.existsSync(path)) {
+          cssPath = path;
+          break;
+        }
+      }
+      
+      if (widgetPath && cssPath) {
+        widgetContent = fs.readFileSync(widgetPath, 'utf8');
+        widgetCSS = fs.readFileSync(cssPath, 'utf8');
+        console.log('Widget files loaded successfully from:', widgetPath, cssPath);
+      } else {
+        throw new Error('Widget files not found in any expected location');
+      }
     } catch (error) {
       console.error('Failed to load widget files:', error);
       // Fallback content for production

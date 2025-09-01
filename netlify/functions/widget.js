@@ -3,7 +3,8 @@
  * Serves the ChatGuusPT widget JavaScript - Standalone version
  */
 
-exports.handler = async (event, context) => {
+// Use CommonJS for Netlify but avoid browser conflicts
+const handler = async (event, context) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -279,7 +280,7 @@ exports.handler = async (event, context) => {
         }
       \`;
       document.head.appendChild(styles);
-
+      
       // Standalone ChatGuus Widget Class
       class ChatGuusWidget {
         constructor(options = {}) {
@@ -549,7 +550,7 @@ exports.handler = async (event, context) => {
 
       // Global API
       window.ChatGuus = ChatGuusWidget;
-
+      
       // Auto-configure for Netlify
       if (window.ChatGuus) {
         const originalInit = window.ChatGuus.init;
@@ -596,3 +597,6 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
+// Export for Netlify
+exports.handler = handler;

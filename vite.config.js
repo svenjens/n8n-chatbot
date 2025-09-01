@@ -8,13 +8,11 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'src/demo/index.html'),
-        widget: resolve(__dirname, 'src/widget/chatguus.js')
+        main: resolve(__dirname, 'src/demo/index.html')
+        // Remove widget bundling - it's served by Netlify function
       },
       output: {
-        entryFileNames: (chunkInfo) => {
-          return chunkInfo.name === 'widget' ? 'widget.js' : '[name]-[hash].js';
-        }
+        entryFileNames: '[name]-[hash].js'
       }
     }
   },

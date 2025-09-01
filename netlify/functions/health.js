@@ -28,6 +28,7 @@ export const handler = async (event, context) => {
       version: '1.0.0',
       timestamp: new Date().toISOString(),
       platform: 'Netlify Functions',
+      mongodb_configured: !!process.env.MONGODB_URI,
       region: process.env.AWS_REGION || 'unknown',
       environment: {
         openai: !!process.env.OPENAI_API_KEY,

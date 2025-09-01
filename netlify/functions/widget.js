@@ -488,13 +488,20 @@ exports.handler = async (event, context) => {
         }
 
         async sendToAPI(message) {
+          // Convert messages to OpenAI format for context
+          const history = this.messages.map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          }));
+
           const payload = {
             message,
             sessionId: this.sessionId,
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
             url: window.location.href,
-            tenantId: this.options.tenantId
+            tenantId: this.options.tenantId,
+            history: history // Include conversation history
           };
 
           const response = await fetch(this.options.webhookUrl, {

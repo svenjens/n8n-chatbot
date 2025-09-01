@@ -207,9 +207,18 @@ exports.handler = async (event, context) => {
     let response;
     let action = null;
 
-    // Get AI response
+    // Prepare session history for context
+    const sessionHistory = requestData.history || [];
+    
+    // Limit history to last 10 messages for performance (5 user + 5 assistant)
+    const limitedHistory = sessionHistory.slice(-10);
+    
+    // Log context usage for debugging
+    console.log(`[${sessionId}] Context: ${limitedHistory.length} messages in history`);
+    
+    // Get AI response with context
     try {
-      response = await callOpenAI(sanitizedMessage);
+      response = await callOpenAI(sanitizedMessage, limitedHistory);
     } catch (aiError) {
       console.error('AI Error:', aiError);
       response = 'Hallo! Ik ben Guus van de Koepel. Helaas kan ik je vraag nu niet direct beantwoorden, maar je kunt altijd contact opnemen via welcome@cupolaxs.nl voor persoonlijke hulp.';

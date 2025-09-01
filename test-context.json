@@ -1,0 +1,14 @@
+{
+  "message": "Wat is mijn naam?",
+  "sessionId": "test-context-123",
+  "history": [
+    {
+      "role": "user",
+      "content": "Hallo, ik ben Sven"
+    },
+    {
+      "role": "assistant", 
+      "content": "Hallo Sven, welkom bij de Koepel! Wat kan ik voor je doen vandaag?"
+    }
+  ]
+}

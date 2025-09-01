@@ -362,6 +362,7 @@
             // Initialize new widget with satisfaction rating - Auto-configured for Netlify
             currentWidget = ChatGuus.init({
                 tenantId: tenant,
+                language: getTenantLanguage(tenant),  // Add language detection
                 // webhookUrl auto-configured to /.netlify/functions/chat
                 
                 // Satisfaction rating configuration
@@ -429,6 +430,15 @@
             document.getElementById('totalRatings').textContent = demoMetrics.totalRatings;
             document.getElementById('responseRate').textContent = responseRate + '%';
             document.getElementById('satisfactionRate').textContent = satisfactionRate + '%';
+        }
+        
+        function getTenantLanguage(tenant) {
+            const languages = {
+                koepel: 'nl',           // Dutch for de Koepel
+                fashionstore: 'en',     // English for fashion store
+                healthcare: 'en'        // English for healthcare
+            };
+            return languages[tenant] || 'nl';
         }
         
         function getTenantColor(tenant) {

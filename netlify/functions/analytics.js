@@ -4,9 +4,23 @@
  * Now with MongoDB Atlas persistent storage
  */
 
-import { 
-  connectToDatabase
-} from '../../src/utils/database.js';
+const { MongoClient } = require('mongodb');
+
+// MongoDB connection
+let cachedDb = null;
+
+async function connectToDatabase() {
+  if (cachedDb) {
+    return cachedDb;
+  }
+
+  const client = new MongoClient(process.env.MONGODB_URI);
+  await client.connect();
+  const db = client.db('chatguus');
+  
+  cachedDb = { client, db };
+  return cachedDb;
+}
 
 // Analytics collection helper
 const AnalyticsDB = {
@@ -41,7 +55,7 @@ const AnalyticsDB = {
   }
 };
 
-export const handler = async (event, context) => {
+const handler = async (event, context) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -268,3 +282,5 @@ async function sendToAnalyticsService(eventData) {
     timestamp: eventData.context.timestamp
   });
 }
+
+exports.handler = handler;

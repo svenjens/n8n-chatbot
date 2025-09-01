@@ -4,20 +4,200 @@
  * Now with MongoDB Atlas persistent storage
  */
 
-import { 
-  AIRatingsDB, 
-  MissingAnswersDB, 
-  SatisfactionRatingsDB,
-  ChatSessionsDB,
-  connectToDatabase,
-  healthCheck 
-} from '../../src/utils/database.js';
+const { MongoClient } = require('mongodb');
+
+// MongoDB connection
+let cachedDb = null;
+
+async function connectToDatabase() {
+  if (cachedDb) {
+    return cachedDb;
+  }
+
+  const client = new MongoClient(process.env.MONGODB_URI);
+  await client.connect();
+  const db = client.db('chatguus');
+  
+  cachedDb = { client, db };
+  return cachedDb;
+}
+
+// Database helpers
+const AIRatingsDB = {
+  async create(data) {
+    const { db } = await connectToDatabase();
+    const result = await db.collection('ai_ratings').insertOne({
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    return result.insertedId;
+  },
+
+  async find(query = {}, options = {}) {
+    const { db } = await connectToDatabase();
+    let cursor = db.collection('ai_ratings').find(query);
+    
+    if (options.sort) cursor = cursor.sort(options.sort);
+    if (options.limit) cursor = cursor.limit(options.limit);
+    if (options.skip) cursor = cursor.skip(options.skip);
+    
+    return await cursor.toArray();
+  },
+
+  async count(query = {}) {
+    const { db } = await connectToDatabase();
+    return await db.collection('ai_ratings').countDocuments(query);
+  },
+
+  async getAnalytics(query = {}) {
+    const { db } = await connectToDatabase();
+    const pipeline = [
+      { $match: query },
+      {
+        $group: {
+          _id: null,
+          totalRatings: { $sum: 1 },
+          avgOverall: { $avg: '$rating.overall' },
+          avgAccuracy: { $avg: '$rating.accuracy' },
+          avgHelpfulness: { $avg: '$rating.helpfulness' },
+          avgCompleteness: { $avg: '$rating.completeness' },
+          avgClarity: { $avg: '$rating.clarity' },
+          avgRelevance: { $avg: '$rating.relevance' },
+          avgConfidence: { $avg: '$rating.confidence' }
+        }
+      }
+    ];
+    
+    const results = await db.collection('ai_ratings').aggregate(pipeline).toArray();
+    return results[0] || { totalRatings: 0 };
+  },
+
+  async getTrends(query = {}) {
+    const { db } = await connectToDatabase();
+    const pipeline = [
+      { $match: query },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 },
+          avgRating: { $avg: '$rating.overall' },
+          avgConfidence: { $avg: '$rating.confidence' }
+        }
+      },
+      { $sort: { _id: 1 } },
+      { $limit: 30 }
+    ];
+    
+    const results = await db.collection('ai_ratings').aggregate(pipeline).toArray();
+    return results.map(r => ({
+      date: r._id,
+      count: r.count,
+      avgRating: parseFloat((r.avgRating || 0).toFixed(2)),
+      avgConfidence: parseFloat(((r.avgConfidence || 0) * 100).toFixed(1))
+    }));
+  },
+
+  async getCategoryBreakdown(query = {}) {
+    const { db } = await connectToDatabase();
+    const pipeline = [
+      { $match: query },
+      {
+        $group: {
+          _id: '$rating.category',
+          count: { $sum: 1 },
+          avgRating: { $avg: '$rating.overall' }
+        }
+      }
+    ];
+    
+    const results = await db.collection('ai_ratings').aggregate(pipeline).toArray();
+    return results.map(r => ({
+      category: r._id || 'unknown',
+      count: r.count,
+      avgRating: parseFloat((r.avgRating || 0).toFixed(2))
+    }));
+  }
+};
+
+const MissingAnswersDB = {
+  async create(data) {
+    const { db } = await connectToDatabase();
+    const result = await db.collection('missing_answers').insertOne({
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    return result.insertedId;
+  },
+
+  async find(query = {}, options = {}) {
+    const { db } = await connectToDatabase();
+    let cursor = db.collection('missing_answers').find(query);
+    
+    if (options.sort) cursor = cursor.sort(options.sort);
+    if (options.limit) cursor = cursor.limit(options.limit);
+    if (options.skip) cursor = cursor.skip(options.skip);
+    
+    return await cursor.toArray();
+  },
+
+  async getAnalytics(query = {}) {
+    const { db } = await connectToDatabase();
+    const total = await db.collection('missing_answers').countDocuments(query);
+    const highPriority = await db.collection('missing_answers').countDocuments({ ...query, priority: 'high' });
+    const mediumPriority = await db.collection('missing_answers').countDocuments({ ...query, priority: 'medium' });
+    const lowPriority = await db.collection('missing_answers').countDocuments({ ...query, priority: 'low' });
+    
+    return { total, highPriority, mediumPriority, lowPriority };
+  }
+};
+
+const SatisfactionRatingsDB = {
+  async getAnalytics(query = {}) {
+    const { db } = await connectToDatabase();
+    const pipeline = [
+      { $match: query },
+      {
+        $group: {
+          _id: null,
+          totalRatings: { $sum: 1 },
+          avgRating: { $avg: '$rating' },
+          satisfiedCount: { $sum: { $cond: [{ $gte: ['$rating', 4] }, 1, 0] } }
+        }
+      }
+    ];
+    
+    const results = await db.collection('satisfaction_ratings').aggregate(pipeline).toArray();
+    const data = results[0] || { totalRatings: 0, avgRating: 0, satisfiedCount: 0 };
+    
+    return {
+      totalRatings: data.totalRatings,
+      avgRating: parseFloat((data.avgRating || 0).toFixed(2)),
+      satisfactionRate: data.totalRatings > 0 ? Math.round((data.satisfiedCount / data.totalRatings) * 100) : 0
+    };
+  }
+};
+
+async function healthCheck() {
+  try {
+    const { db } = await connectToDatabase();
+    await db.admin().ping();
+    return { status: 'healthy', connected: true };
+  } catch (error) {
+    return { status: 'unhealthy', connected: false, error: error.message };
+  }
+}
 
 // Cache for dashboard data (5 minute TTL)
 let dashboardCache = null;
 let cacheTimestamp = null;
 
-export const handler = async (event, context) => {
+// In-memory storage for missing answers (fallback)
+let missingAnswers = [];
+let aiRatings = [];
+
+const handler = async (event, context) => {
   // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -818,3 +998,5 @@ async function handleHealthCheck(headers) {
     };
   }
 }
+
+exports.handler = handler;

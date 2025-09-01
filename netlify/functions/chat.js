@@ -9,8 +9,7 @@ import { ServiceRequestHandler } from '../../src/server/service-request-handler.
 import { messageSanitizer } from '../../src/utils/message-sanitizer.js';
 import { 
   ChatSessionsDB, 
-  connectToDatabase,
-  generateId 
+  connectToDatabase
 } from '../../src/utils/database.js';
 
 // Initialize services (singleton pattern for serverless)

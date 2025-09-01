@@ -5,8 +5,7 @@
  */
 
 import { 
-  connectToDatabase,
-  generateId 
+  connectToDatabase
 } from '../../src/utils/database.js';
 
 // Analytics collection helper

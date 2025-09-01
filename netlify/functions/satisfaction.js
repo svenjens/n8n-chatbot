@@ -7,8 +7,7 @@
 import { 
   SatisfactionRatingsDB, 
   ChatSessionsDB,
-  connectToDatabase,
-  generateId 
+  connectToDatabase
 } from '../../src/utils/database.js';
 
 export const handler = async (event, context) => {

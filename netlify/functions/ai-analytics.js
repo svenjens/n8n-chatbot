@@ -933,8 +933,9 @@ function getTopMissingQuestions(missingAnswers) {
 }
 
 function calculateUserSatisfactionRate() {
-  // Mock calculation - in real implementation, get from satisfaction ratings
-  return 87; // 87% satisfaction rate
+  // This function is deprecated - satisfaction rate should come from SatisfactionRatingsDB.getAnalytics()
+  // Return 0 to indicate no data available
+  return 0;
 }
 
 /**

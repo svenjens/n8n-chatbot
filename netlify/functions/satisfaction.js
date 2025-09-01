@@ -4,20 +4,121 @@
  * Now with MongoDB Atlas persistent storage
  */
 
-import { 
-  SatisfactionRatingsDB, 
-  ChatSessionsDB,
-  connectToDatabase
-} from '../../src/utils/database.js';
-import { 
-  processTenantRequest,
-  buildTenantQuery,
-  buildPeriodFilter,
-  addTenantContext,
-  logTenantEvent
-} from '../../src/utils/tenant-helper.js';
+const { MongoClient } = require('mongodb');
 
-export const handler = async (event, context) => {
+// MongoDB connection
+let cachedDb = null;
+
+async function connectToDatabase() {
+  if (cachedDb) {
+    return cachedDb;
+  }
+
+  const client = new MongoClient(process.env.MONGODB_URI);
+  await client.connect();
+  const db = client.db('chatguus');
+  
+  cachedDb = { client, db };
+  return cachedDb;
+}
+
+// Database helpers
+const SatisfactionRatingsDB = {
+  async create(data) {
+    const { db } = await connectToDatabase();
+    const result = await db.collection('satisfaction_ratings').insertOne({
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    return result.insertedId;
+  },
+
+  async find(query = {}, options = {}) {
+    const { db } = await connectToDatabase();
+    let cursor = db.collection('satisfaction_ratings').find(query);
+    
+    if (options.sort) cursor = cursor.sort(options.sort);
+    if (options.limit) cursor = cursor.limit(options.limit);
+    if (options.skip) cursor = cursor.skip(options.skip);
+    
+    return await cursor.toArray();
+  }
+};
+
+const ChatSessionsDB = {
+  async findBySession(sessionId) {
+    const { db } = await connectToDatabase();
+    return await db.collection('chat_sessions').findOne({ sessionId });
+  },
+
+  async create(data) {
+    const { db } = await connectToDatabase();
+    const result = await db.collection('chat_sessions').insertOne({
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    return result.insertedId;
+  }
+};
+
+// Tenant helper functions (embedded)
+function processTenantRequest(event) {
+  const tenantId = event.headers['x-tenant-id'] || event.headers['X-Tenant-ID'] || 'default';
+  const tenant = { 
+    id: tenantId, 
+    name: tenantId === 'default' ? 'Default' : tenantId,
+    defaultLanguage: 'nl'
+  };
+  return { tenantId, tenant };
+}
+
+function buildTenantQuery(tenantId, additionalFilters = {}) {
+  const query = { ...additionalFilters };
+  if (tenantId && tenantId !== 'all') {
+    query.tenantId = tenantId;
+  }
+  return query;
+}
+
+function buildPeriodFilter(period) {
+  if (!period || period === 'all') return {};
+  
+  const now = new Date();
+  let startDate;
+  
+  switch (period) {
+    case 'today':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      break;
+    case 'week':
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case 'month':
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      return {};
+  }
+  
+  return { createdAt: { $gte: startDate } };
+}
+
+function addTenantContext(data, tenantId, tenantInfo) {
+  return {
+    ...data,
+    tenantId,
+    tenantName: tenantInfo.tenantName,
+    language: tenantInfo.language
+  };
+}
+
+function logTenantEvent(tenantId, eventType, data) {
+  console.log(`[${tenantId}] ${eventType}:`, data);
+}
+
+const handler = async (event, context) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -637,3 +738,5 @@ function sanitizeURL(url) {
     return null;
   }
 }
+
+exports.handler = handler;

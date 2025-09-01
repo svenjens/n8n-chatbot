@@ -259,7 +259,8 @@ const analytics = await fetch('/.netlify/functions/ai-analytics?action=export_da
 - **Performance Tracking**: Measure satisfaction and effectiveness
 - **Data-Driven Decisions**: Use analytics for chatbot optimization
 
-**Live Dashboard**: [Analytics Dashboard](https://chatguuspt.netlify.app/admin/analytics-dashboard.html)
+**Live Dashboard**: [Analytics Dashboard](https://chatguuspt.netlify.app/admin/analytics-dashboard.html)  
+**Status**: Real-time data from MongoDB Atlas
 
 ---
 

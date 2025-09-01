@@ -3,7 +3,7 @@
  * Simple health check endpoint
  */
 
-export const handler = async (event, context) => {
+exports.handler = async (event, context) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {

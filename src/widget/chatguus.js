@@ -5,6 +5,7 @@
 
 import { UserFingerprinting, trackChatEvent } from '../utils/user-fingerprinting.js';
 import { SatisfactionRating } from '../utils/satisfaction-rating.js';
+import { AISelfRating } from '../utils/ai-self-rating.js';
 
 class ChatGuusWidget {
   constructor(options = {}) {
@@ -53,6 +54,13 @@ class ChatGuusWidget {
       collectFeedback: options.collectFeedback !== false,
       minMessages: options.minMessagesForRating || 3,
       language: options.language || this.detectLanguage(options.tenantId)
+    });
+
+    // Initialize AI self-rating system
+    this.aiSelfRating = new AISelfRating({
+      enableSelfRating: options.enableAISelfRating !== false,
+      confidenceThreshold: options.aiConfidenceThreshold || 0.7,
+      trackMissingAnswers: options.trackMissingAnswers !== false
     });
     
     this.init();
@@ -575,6 +583,33 @@ class ChatGuusWidget {
       // Hide typing and show response
       this.hideTyping();
       this.addMessage(response.message, 'bot');
+      
+      // AI Self-Rating: Let AI evaluate its own response
+      if (this.aiSelfRating && message) {
+        const ratingContext = {
+          sessionId: this.sessionId,
+          tenantId: this.options.tenantId,
+          responseTime,
+          hasAction: !!response.action,
+          actionType: response.action?.type || null
+        };
+        
+        // Rate the AI response asynchronously
+        this.aiSelfRating.rateResponse(message, response.message, ratingContext)
+          .then(rating => {
+            if (rating) {
+              this.trackEvent('ai_self_rating', {
+                ratingId: rating.id,
+                overallRating: rating.rating.overall,
+                confidence: rating.rating.confidence,
+                category: rating.rating.category
+              });
+            }
+          })
+          .catch(error => {
+            console.warn('AI self-rating failed:', error);
+          });
+      }
       
       // Handle any special actions (email routing, etc.)
       if (response.action) {

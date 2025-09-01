@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGuusPT Analytics Dashboard</title>
+    
+    <!-- Ant Design CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/antd@5.12.8/dist/reset.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/antd@5.12.8/dist/antd.min.css" rel="stylesheet">
+    
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #1890ff, #722ed1);
+            color: white;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .dashboard-subtitle {
+            opacity: 0.9;
+            margin-top: 8px;
+            font-size: 16px;
+        }
+        
+        .dashboard-content {
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #f0f0f0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .stat-title {
+            font-size: 14px;
+            color: #8c8c8c;
+            font-weight: 500;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #262626;
+            margin-bottom: 8px;
+        }
+        
+        .stat-change {
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .stat-change.positive {
+            color: #52c41a;
+        }
+        
+        .stat-change.negative {
+            color: #ff4d4f;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #f0f0f0;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #262626;
+        }
+        
+        .missing-answers-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #f0f0f0;
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #262626;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .missing-answer-item {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid #ff4d4f;
+        }
+        
+        .missing-answer-item.medium {
+            border-left-color: #faad14;
+        }
+        
+        .missing-answer-item.low {
+            border-left-color: #52c41a;
+        }
+        
+        .missing-question {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #262626;
+        }
+        
+        .missing-response {
+            color: #8c8c8c;
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+        
+        .missing-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+        
+        .priority-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .priority-high {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+        
+        .priority-medium {
+            background: #fffbe6;
+            color: #faad14;
+            border: 1px solid #ffe58f;
+        }
+        
+        .priority-low {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        
+        .refresh-button {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(24,144,255,0.3);
+            transition: all 0.3s;
+        }
+        
+        .refresh-button:hover {
+            background: #40a9ff;
+            transform: scale(1.1);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8c8c8c;
+        }
+        
+        .loading i {
+            font-size: 24px;
+            margin-bottom: 16px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .filters-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #f0f0f0;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .filter-label {
+            font-size: 12px;
+            color: #8c8c8c;
+            font-weight: 500;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .export-buttons {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .export-btn {
+            padding: 8px 16px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .export-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .export-buttons {
+                margin-left: 0;
+                margin-top: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <i class="fas fa-chart-line"></i>
+            ChatGuusPT Analytics Dashboard
+        </h1>
+        <p class="dashboard-subtitle">
+            AI Self-Ratings, Satisfaction Metrics & Missing Answers Analysis
+        </p>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-content">
+        <!-- Filters Bar -->
+        <div class="filters-bar">
+            <div class="filter-group">
+                <label class="filter-label">Tenant</label>
+                <select class="filter-select" id="tenantFilter">
+                    <option value="all">Alle Tenants</option>
+                    <option value="koepel">De Koepel</option>
+                    <option value="fashionstore">Fashion Store</option>
+                    <option value="healthcare">Healthcare</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Periode</label>
+                <select class="filter-select" id="periodFilter">
+                    <option value="today">Vandaag</option>
+                    <option value="week">Deze Week</option>
+                    <option value="month" selected>Deze Maand</option>
+                    <option value="quarter">Dit Kwartaal</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Categorie</label>
+                <select class="filter-select" id="categoryFilter">
+                    <option value="all">Alle Categorieën</option>
+                    <option value="service_request">Service Requests</option>
+                    <option value="event_inquiry">Event Vragen</option>
+                    <option value="faq">FAQ</option>
+                    <option value="general">Algemeen</option>
+                    <option value="unknown">Onbekend</option>
+                </select>
+            </div>
+            
+            <div class="export-buttons">
+                <button class="export-btn" onclick="exportData('csv')">
+                    <i class="fas fa-download"></i> CSV
+                </button>
+                <button class="export-btn" onclick="exportData('json')">
+                    <i class="fas fa-code"></i> JSON
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Gemiddelde AI Rating</span>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #1890ff, #40a9ff);">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="avgAIRating">4.2</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +0.3 deze week
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Gebruiker Tevredenheid</span>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #52c41a, #73d13d);">
+                        <i class="fas fa-smile"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="userSatisfaction">87%</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +5% deze week
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Missende Antwoorden</span>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #ff4d4f, #ff7875);">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="missingAnswers">23</div>
+                <div class="stat-change negative">
+                    <i class="fas fa-arrow-down"></i>
+                    -7 deze week
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">AI Vertrouwen</span>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #722ed1, #9254de);">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="aiConfidence">78%</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +12% deze week
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Rating Trends Chart -->
+            <div class="chart-card">
+                <h3 class="chart-title">AI Rating & Satisfaction Trends</h3>
+                <canvas id="ratingsChart" height="300"></canvas>
+            </div>
+            
+            <!-- Category Breakdown -->
+            <div class="chart-card">
+                <h3 class="chart-title">Vraag Categorieën</h3>
+                <canvas id="categoryChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Missing Answers Section -->
+        <div class="missing-answers-section">
+            <h3 class="section-title">
+                <i class="fas fa-exclamation-triangle" style="color: #ff4d4f;"></i>
+                Missende Antwoorden - Actie Vereist
+            </h3>
+            
+            <div id="missingAnswersList">
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <div>Laden van missende antwoorden...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Button -->
+    <button class="refresh-button" onclick="refreshDashboard()" title="Ververs Dashboard">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
+    <script>
+        // Dashboard State
+        let dashboardData = {
+            aiRatings: [],
+            satisfactionRatings: [],
+            missingAnswers: [],
+            analytics: {}
+        };
+        
+        let charts = {};
+        
+        // Initialize Dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDashboard();
+            setupEventListeners();
+            loadDashboardData();
+        });
+        
+        function initializeDashboard() {
+            console.log('🚀 ChatGuusPT Analytics Dashboard Initialized');
+        }
+        
+        function setupEventListeners() {
+            // Filter change listeners
+            document.getElementById('tenantFilter').addEventListener('change', applyFilters);
+            document.getElementById('periodFilter').addEventListener('change', applyFilters);
+            document.getElementById('categoryFilter').addEventListener('change', applyFilters);
+            
+            // Auto-refresh every 5 minutes
+            setInterval(refreshDashboard, 5 * 60 * 1000);
+        }
+        
+        async function loadDashboardData() {
+            try {
+                showLoading();
+                
+                // Load data from multiple sources
+                const [aiRatingsData, satisfactionData, analyticsData] = await Promise.all([
+                    fetchAIRatings(),
+                    fetchSatisfactionRatings(),
+                    fetchAnalytics()
+                ]);
+                
+                dashboardData.aiRatings = aiRatingsData;
+                dashboardData.satisfactionRatings = satisfactionData;
+                dashboardData.analytics = analyticsData;
+                dashboardData.missingAnswers = analyticsData.missingAnswers || [];
+                
+                updateDashboard();
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+                showError('Er ging iets mis bij het laden van de data. Probeer opnieuw.');
+            }
+        }
+        
+        async function fetchAIRatings() {
+            // Simulate AI ratings data
+            return generateMockAIRatings();
+        }
+        
+        async function fetchSatisfactionRatings() {
+            try {
+                const response = await fetch('/.netlify/functions/satisfaction?action=get_analytics');
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (error) {
+                console.warn('Could not fetch satisfaction ratings:', error);
+            }
+            
+            // Return mock data if API fails
+            return generateMockSatisfactionData();
+        }
+        
+        async function fetchAnalytics() {
+            try {
+                const response = await fetch('/.netlify/functions/analytics?action=get_dashboard_data');
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (error) {
+                console.warn('Could not fetch analytics:', error);
+            }
+            
+            // Return mock analytics data
+            return generateMockAnalytics();
+        }
+        
+        function updateDashboard() {
+            updateStatistics();
+            updateCharts();
+            updateMissingAnswers();
+        }
+        
+        function updateStatistics() {
+            const analytics = dashboardData.analytics;
+            
+            // Update AI Rating
+            const avgAIRating = analytics.averageAIRating || 4.2;
+            document.getElementById('avgAIRating').textContent = avgAIRating.toFixed(1);
+            
+            // Update User Satisfaction
+            const userSatisfaction = analytics.userSatisfactionRate || 87;
+            document.getElementById('userSatisfaction').textContent = userSatisfaction + '%';
+            
+            // Update Missing Answers
+            const missingCount = dashboardData.missingAnswers.length;
+            document.getElementById('missingAnswers').textContent = missingCount;
+            
+            // Update AI Confidence
+            const aiConfidence = analytics.averageConfidence || 78;
+            document.getElementById('aiConfidence').textContent = aiConfidence + '%';
+        }
+        
+        function updateCharts() {
+            createRatingsChart();
+            createCategoryChart();
+        }
+        
+        function createRatingsChart() {
+            const ctx = document.getElementById('ratingsChart').getContext('2d');
+            
+            if (charts.ratings) {
+                charts.ratings.destroy();
+            }
+            
+            const dates = getLast30Days();
+            const aiRatingData = dates.map(() => Math.random() * 1 + 3.5); // 3.5-4.5
+            const satisfactionData = dates.map(() => Math.random() * 20 + 75); // 75-95%
+            
+            charts.ratings = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates.map(date => date.toLocaleDateString('nl-NL', { month: 'short', day: 'numeric' })),
+                    datasets: [
+                        {
+                            label: 'AI Self-Rating',
+                            data: aiRatingData,
+                            borderColor: '#1890ff',
+                            backgroundColor: 'rgba(24, 144, 255, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Gebruiker Tevredenheid (%)',
+                            data: satisfactionData,
+                            borderColor: '#52c41a',
+                            backgroundColor: 'rgba(82, 196, 26, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            min: 0,
+                            max: 5,
+                            title: {
+                                display: true,
+                                text: 'AI Rating (1-5)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            min: 0,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Tevredenheid (%)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createCategoryChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            if (charts.category) {
+                charts.category.destroy();
+            }
+            
+            const categoryData = {
+                'Service Requests': 45,
+                'Event Vragen': 28,
+                'FAQ': 35,
+                'Algemeen': 22,
+                'Onbekend': 12
+            };
+            
+            charts.category = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categoryData),
+                    datasets: [{
+                        data: Object.values(categoryData),
+                        backgroundColor: [
+                            '#1890ff',
+                            '#52c41a', 
+                            '#faad14',
+                            '#722ed1',
+                            '#ff4d4f'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateMissingAnswers() {
+            const container = document.getElementById('missingAnswersList');
+            const missingAnswers = dashboardData.missingAnswers;
+            
+            if (missingAnswers.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #52c41a;">
+                        <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <h3>Geen missende antwoorden!</h3>
+                        <p>Alle vragen worden adequaat beantwoord.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = missingAnswers.map(answer => `
+                <div class="missing-answer-item ${answer.priority}">
+                    <div class="missing-question">
+                        <i class="fas fa-question-circle"></i>
+                        ${answer.userQuestion}
+                    </div>
+                    <div class="missing-response">
+                        AI Response: "${answer.aiResponse}"
+                    </div>
+                    <div class="missing-meta">
+                        <span class="priority-badge priority-${answer.priority}">
+                            ${answer.priority} prioriteit
+                        </span>
+                        <span>
+                            <i class="fas fa-tag"></i>
+                            ${answer.category}
+                        </span>
+                        <span>
+                            <i class="fas fa-clock"></i>
+                            ${new Date(answer.timestamp).toLocaleDateString('nl-NL')}
+                        </span>
+                        <span>
+                            <i class="fas fa-redo"></i>
+                            ${answer.frequency}x gevraagd
+                        </span>
+                        <span>
+                            <i class="fas fa-chart-line"></i>
+                            AI Rating: ${answer.rating?.overall || 'N/A'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function applyFilters() {
+            const tenant = document.getElementById('tenantFilter').value;
+            const period = document.getElementById('periodFilter').value;
+            const category = document.getElementById('categoryFilter').value;
+            
+            console.log('Applying filters:', { tenant, period, category });
+            
+            // Filter data and update dashboard
+            // Implementation would filter dashboardData based on selected filters
+            updateDashboard();
+        }
+        
+        function exportData(format) {
+            const data = {
+                aiRatings: dashboardData.aiRatings,
+                satisfactionRatings: dashboardData.satisfactionRatings,
+                missingAnswers: dashboardData.missingAnswers,
+                analytics: dashboardData.analytics,
+                exportedAt: new Date().toISOString()
+            };
+            
+            if (format === 'json') {
+                downloadJSON(data, 'chatguus-analytics.json');
+            } else if (format === 'csv') {
+                downloadCSV(data, 'chatguus-analytics.csv');
+            }
+        }
+        
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function downloadCSV(data, filename) {
+            // Convert missing answers to CSV format
+            const csvData = data.missingAnswers.map(answer => ({
+                timestamp: answer.timestamp,
+                question: answer.userQuestion,
+                response: answer.aiResponse,
+                category: answer.category,
+                priority: answer.priority,
+                frequency: answer.frequency,
+                aiRating: answer.rating?.overall || ''
+            }));
+            
+            if (csvData.length === 0) {
+                alert('Geen data beschikbaar voor export.');
+                return;
+            }
+            
+            const headers = Object.keys(csvData[0]);
+            const csv = [
+                headers.join(','),
+                ...csvData.map(row => headers.map(header => `"${row[header]}"`).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function refreshDashboard() {
+            console.log('🔄 Refreshing dashboard...');
+            loadDashboardData();
+        }
+        
+        function showLoading() {
+            // Add loading states to cards
+        }
+        
+        function hideLoading() {
+            // Remove loading states
+        }
+        
+        function showError(message) {
+            console.error('Dashboard Error:', message);
+            // Show error notification
+        }
+        
+        // Helper functions
+        function getLast30Days() {
+            const days = [];
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                days.push(date);
+            }
+            return days;
+        }
+        
+        function generateMockAIRatings() {
+            const ratings = [];
+            for (let i = 0; i < 100; i++) {
+                ratings.push({
+                    id: `ai_rating_${i}`,
+                    timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    rating: {
+                        overall: Math.random() * 2 + 3, // 3-5
+                        accuracy: Math.random() * 2 + 3,
+                        helpfulness: Math.random() * 2 + 3,
+                        completeness: Math.random() * 2 + 3,
+                        clarity: Math.random() * 2 + 3,
+                        relevance: Math.random() * 2 + 3,
+                        confidence: Math.random() * 0.4 + 0.6, // 0.6-1.0
+                        category: ['service_request', 'event_inquiry', 'faq', 'general', 'unknown'][Math.floor(Math.random() * 5)]
+                    }
+                });
+            }
+            return ratings;
+        }
+        
+        function generateMockSatisfactionData() {
+            return {
+                totalRatings: 156,
+                averageRating: 4.3,
+                responseRate: 67,
+                satisfactionRate: 87
+            };
+        }
+        
+        function generateMockAnalytics() {
+            const mockMissingAnswers = [
+                {
+                    id: 'missing_1',
+                    timestamp: new Date().toISOString(),
+                    userQuestion: 'Hoe kan ik mijn event annuleren?',
+                    aiResponse: 'Sorry, ik weet niet precies hoe het annuleringsproces werkt.',
+                    category: 'event_inquiry',
+                    priority: 'high',
+                    frequency: 5,
+                    rating: { overall: 2.1, confidence: 0.3 }
+                },
+                {
+                    id: 'missing_2',
+                    timestamp: new Date().toISOString(),
+                    userQuestion: 'Wat zijn de kosten voor extra beveiliging?',
+                    aiResponse: 'Voor specifieke prijsinformatie kunt u contact opnemen met ons team.',
+                    category: 'service_request',
+                    priority: 'medium',
+                    frequency: 3,
+                    rating: { overall: 3.2, confidence: 0.5 }
+                },
+                {
+                    id: 'missing_3',
+                    timestamp: new Date().toISOString(),
+                    userQuestion: 'Kunnen jullie glutenvrije catering leveren?',
+                    aiResponse: 'Ik denk dat we verschillende opties hebben, maar ben niet zeker.',
+                    category: 'service_request',
+                    priority: 'high',
+                    frequency: 8,
+                    rating: { overall: 2.8, confidence: 0.4 }
+                }
+            ];
+            
+            return {
+                averageAIRating: 4.2,
+                userSatisfactionRate: 87,
+                averageConfidence: 78,
+                missingAnswers: mockMissingAnswers
+            };
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "name": "chatguuspt",
+  "version": "1.0.0",
+  "description": "ChatGuusPT - Vriendelijke chatbot voor de Koepel zakelijke gebruikers",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node src/server/index.js",
+    "dev:server": "nodemon src/server/index.js",
+    "test": "vitest",
+    "setup": "node scripts/setup.js",
+    "lint": "echo 'Linting not configured yet'",
+    "deploy": "npm run build && echo 'Deploy script - configure for your platform'"
+  },
+  "keywords": [
+    "chatbot",
+    "n8n",
+    "openai",
+    "embeddable",
+    "widget"
+  ],
+  "author": "Koepel Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "openai": "^4.20.1",
+    "axios": "^1.6.0",
+    "uuid": "^9.0.1",
+    "nodemailer": "^6.9.7",
+    "google-spreadsheet": "^4.1.2",
+    "google-auth-library": "^9.4.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0",
+    "nodemon": "^3.0.2"
+  }
+}

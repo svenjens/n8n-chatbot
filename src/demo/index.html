@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGuusPT Demo - De Koepel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .demo-section h2 {
+            color: #2563eb;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .demo-section h3 {
+            color: #1e293b;
+            margin: 20px 0 10px 0;
+            font-size: 1.3rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .feature-card h4 {
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .feature-card p {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        .test-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .test-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .test-button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .test-button.secondary {
+            background: #64748b;
+        }
+
+        .test-button.secondary:hover {
+            background: #475569;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background: #10b981;
+        }
+
+        .status-offline {
+            background: #ef4444;
+        }
+
+        .chat-preview {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            background: #f8fafc;
+            margin: 20px 0;
+        }
+
+        .chat-preview h4 {
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+
+        .preview-message {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 18px;
+            margin: 8px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .preview-message.user {
+            background: #2563eb;
+            color: white;
+            margin-left: 50px;
+            border-bottom-right-radius: 4px;
+        }
+
+        .preview-message.bot {
+            background: white;
+            color: #1e293b;
+            margin-right: 50px;
+            border-bottom-left-radius: 4px;
+            border-left: 3px solid #2563eb;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .demo-section {
+                padding: 20px;
+            }
+            
+            .test-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 ChatGuusPT</h1>
+            <p>Vriendelijke chatbot voor de Koepel zakelijke gebruikers</p>
+        </div>
+
+        <div class="demo-section">
+            <h2>🎯 Demo & Testing</h2>
+            <p>Welkom bij de ChatGuusPT demo! Deze pagina toont hoe de chatbot werkt en biedt testfunctionaliteit.</p>
+            
+            <div class="test-buttons">
+                <button class="test-button" onclick="openChat()">💬 Open Chat Widget</button>
+                <button class="test-button secondary" onclick="testServiceRequest()">🛠️ Test Serviceverzoek</button>
+                <button class="test-button secondary" onclick="testEventInquiry()">🎉 Test Event Uitvraag</button>
+                <button class="test-button secondary" onclick="testFAQ()">❓ Test FAQ</button>
+            </div>
+
+            <div id="status-display" style="margin: 20px 0;">
+                <h3>🔍 Status:</h3>
+                <p><span class="status-indicator status-offline"></span><span id="server-status">Checking server...</span></p>
+                <p><span class="status-indicator status-offline"></span><span id="n8n-status">Checking N8N...</span></p>
+                <p><span class="status-indicator status-offline"></span><span id="openai-status">Checking OpenAI...</span></p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>✨ Features</h2>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎭 Guus Personality</h4>
+                    <p>Vriendelijk, gastvrij en behulpzaam - net als de echte Guus van de Koepel</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🔄 N8N Integration</h4>
+                    <p>Seamless workflow automation voor complexe business logic</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🤖 OpenAI Powered</h4>
+                    <p>Intelligente responses via GPT models met context awareness</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>📧 Smart Routing</h4>
+                    <p>Automatisch doorsturen naar juiste teams: IT, Schoonmaak, Events</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>📊 Service Requests</h4>
+                    <p>Gestructureerde afhandeling volgens servicerequest formulier</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🎉 Event Management</h4>
+                    <p>Uitgebreide event uitvraag flows naar events team</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>💬 Chat Preview</h2>
+            <p>Zo ziet een typische conversatie met Guus eruit:</p>
+            
+            <div class="chat-preview">
+                <h4>Voorbeeld Conversatie:</h4>
+                <div class="preview-message bot">
+                    Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen? 👋
+                </div>
+                <div class="preview-message user">
+                    Hoi Guus! Ik wil graag een bedrijfsborrel organiseren voor 50 personen.
+                </div>
+                <div class="preview-message bot">
+                    Wat leuk dat je een bedrijfsborrel wilt organiseren in de Koepel! 🎉<br><br>
+                    Om je de beste service te kunnen bieden, wil ik graag wat meer weten:<br>
+                    • Wanneer wil je de borrel houden?<br>
+                    • Wat spreekt je aan in de Koepel als locatie?<br>
+                    • Heb je een budget indicatie?<br><br>
+                    Vertel me meer over je plannen!
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔧 Implementatie</h2>
+            <p>Zo implementeer je ChatGuusPT op je eigen website:</p>
+            
+            <h3>1. Basis Widget</h3>
+            <div class="code-block">
+&lt;!-- Voeg dit toe aan je HTML --&gt;
+&lt;div id="chatguus-widget"&gt;&lt;/div&gt;
+&lt;script src="https://jouw-domain.com/widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  ChatGuus.init({
+    target: '#chatguus-widget',
+    webhookUrl: 'https://jouw-n8n-instance.com/webhook/chatguus',
+    theme: 'koepel',
+    welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen?'
+  });
+&lt;/script&gt;
+            </div>
+
+            <h3>2. Aangepaste Styling</h3>
+            <div class="code-block">
+ChatGuus.init({
+  target: '#chatguus-widget',
+  webhookUrl: 'YOUR_WEBHOOK_URL',
+  primaryColor: '#2563eb',
+  position: 'bottom-right',
+  avatar: '/path/to/guus-avatar.png',
+  theme: {
+    headerBackground: '#2563eb',
+    messageBackground: '#f1f5f9',
+    userMessageBackground: '#2563eb'
+  }
+});
+            </div>
+
+            <h3>3. N8N Webhook URL</h3>
+            <p>Configureer je N8N webhook URL in de widget initialisatie. De workflow handelt automatisch:</p>
+            <ul style="margin: 10px 0 10px 20px;">
+                <li>Intent detectie en routing</li>
+                <li>OpenAI integratie voor responses</li>
+                <li>Email doorverwijzing naar juiste teams</li>
+                <li>Google Sheets logging</li>
+                <li>Conversation memory management</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <h2>📊 Business Logic</h2>
+            
+            <h3>Servicevragen Routing:</h3>
+            <ul style="margin: 10px 0 10px 20px;">
+                <li><strong>IT/Technisch:</strong> support@axs-ict.com</li>
+                <li><strong>Schoonmaak:</strong> ralphcassa@gmail.com</li>
+                <li><strong>Algemeen/Overige:</strong> welcome@cupolaxs.nl</li>
+                <li><strong>Bestaande Events:</strong> welcome@cupolaxs.nl</li>
+            </ul>
+
+            <h3>Event Uitvraag Flow:</h3>
+            <ol style="margin: 10px 0 10px 20px;">
+                <li>Type evenement identificeren</li>
+                <li>Motivatie voor Koepel uitvragen</li>
+                <li>Randvoorwaarden verzamelen (aantal personen, budget)</li>
+                <li>Doorsturen naar irene@cupolaxs.nl</li>
+            </ol>
+
+            <h3>FAQ Systeem:</h3>
+            <p>Automatisch beantwoorden van vragen gebaseerd op cupolaxs.nl content over:</p>
+            <ul style="margin: 10px 0 10px 20px;">
+                <li>Openingstijden en bereikbaarheid</li>
+                <li>Faciliteiten en ruimtes</li>
+                <li>Prijzen en voorwaarden</li>
+                <li>Contact en teams</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ChatGuus Widget Integration -->
+    <div id="chatguus-widget"></div>
+
+    <script type="module">
+        import ChatGuusWidget from '../widget/chatguus.js';
+
+        // Initialize ChatGuus widget
+        const chatbot = ChatGuusWidget.init({
+            target: '#chatguus-widget',
+            webhookUrl: '/api/chat', // Fallback to local API for demo
+            theme: 'koepel',
+            welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Welkom bij de demo! Waar kan ik je mee helpen?',
+            primaryColor: '#2563eb',
+            position: 'bottom-right'
+        });
+
+        // Demo functions
+        window.openChat = () => {
+            chatbot.open();
+        };
+
+        window.testServiceRequest = () => {
+            chatbot.open();
+            setTimeout(() => {
+                chatbot.addMessage('Ik heb een IT probleem met mijn laptop', 'user');
+                setTimeout(() => {
+                    chatbot.addMessage('Ik help je graag met je IT probleem! Kun je me vertellen wat er precies aan de hand is met je laptop? Gaat het om software, hardware, of netwerk problemen?', 'bot');
+                }, 1000);
+            }, 500);
+        };
+
+        window.testEventInquiry = () => {
+            chatbot.open();
+            setTimeout(() => {
+                chatbot.addMessage('Ik wil een bedrijfsfeest organiseren voor 75 personen', 'user');
+                setTimeout(() => {
+                    chatbot.addMessage('Wat leuk dat je een bedrijfsfeest wilt organiseren in de Koepel! 🎉\n\nOm je de beste service te kunnen bieden, wil ik graag wat meer weten:\n\n🎯 Type evenement: Bedrijfsfeest - check!\n🏢 Waarom de Koepel: Wat spreekt je aan in onze locatie?\n👥 Aantal gasten: 75 personen - perfect!\n💰 Budget: Heb je een budget indicatie?\n📅 Timing: Wanneer wil je het feest houden?\n\nVertel me meer over je plannen!', 'bot');
+                }, 1000);
+            }, 500);
+        };
+
+        window.testFAQ = () => {
+            chatbot.open();
+            setTimeout(() => {
+                chatbot.addMessage('Wat zijn jullie openingstijden?', 'user');
+                setTimeout(() => {
+                    chatbot.addMessage('De Koepel is doordeweeks geopend van 8:00 tot 18:00. Voor evenementen kunnen we ook buiten deze tijden open - dat bespreken we graag persoonlijk!\n\nHeb je specifieke plannen waar ik je mee kan helpen? 😊', 'bot');
+                }, 1000);
+            }, 500);
+        };
+
+        // Status checking
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                document.getElementById('server-status').textContent = `Server Online (v${data.version})`;
+                document.querySelector('#status-display .status-indicator').className = 'status-indicator status-online';
+            } catch (error) {
+                document.getElementById('server-status').textContent = 'Server Offline';
+            }
+        }
+
+        async function checkN8NStatus() {
+            try {
+                const response = await fetch('/api/n8n-proxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'test', sessionId: 'status-check' })
+                });
+                
+                if (response.ok) {
+                    document.getElementById('n8n-status').textContent = 'N8N Connected';
+                    document.querySelectorAll('#status-display .status-indicator')[1].className = 'status-indicator status-online';
+                } else {
+                    throw new Error('N8N not available');
+                }
+            } catch (error) {
+                document.getElementById('n8n-status').textContent = 'Using Fallback API';
+                document.querySelectorAll('#status-display .status-indicator')[1].className = 'status-indicator status-offline';
+            }
+        }
+
+        async function checkOpenAIStatus() {
+            try {
+                const response = await fetch('/api/test-guus?message=test');
+                const data = await response.json();
+                
+                if (data.response) {
+                    document.getElementById('openai-status').textContent = 'OpenAI Connected';
+                    document.querySelectorAll('#status-display .status-indicator')[2].className = 'status-indicator status-online';
+                } else {
+                    throw new Error('OpenAI not responding');
+                }
+            } catch (error) {
+                document.getElementById('openai-status').textContent = 'OpenAI Not Configured';
+            }
+        }
+
+        // Run status checks
+        document.addEventListener('DOMContentLoaded', () => {
+            checkServerStatus();
+            checkN8NStatus();
+            checkOpenAIStatus();
+        });
+    </script>
+</body>
+</html>

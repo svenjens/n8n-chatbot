@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voorbeeld Website met ChatGuusPT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2563eb;
+            text-align: center;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+        
+        .cta-button {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        
+        .cta-button:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 Welkom bij de Koepel</h1>
+        
+        <div class="section">
+            <h2>Over Ons</h2>
+            <p>De Koepel is dé plek voor zakelijke bijeenkomsten, evenementen en flexibele werkplekken. 
+            Met onze moderne faciliteiten en persoonlijke service maken we van elk evenement een succes.</p>
+        </div>
+
+        <div class="section">
+            <h2>🎉 Evenementen</h2>
+            <p>Van intieme vergaderingen tot grote bedrijfsfeesten - wij hebben de perfecte ruimte voor jouw evenement.</p>
+            <button class="cta-button" onclick="askAboutEvents()">Plan een Evenement</button>
+        </div>
+
+        <div class="section">
+            <h2>🛠️ Services</h2>
+            <p>Onze service teams staan klaar om je te helpen met alles wat je nodig hebt.</p>
+            <button class="cta-button" onclick="requestService()">Vraag Service Aan</button>
+        </div>
+
+        <div class="section">
+            <h2>📞 Contact</h2>
+            <p>Heb je vragen? Onze chatbot Guus staat 24/7 klaar om je te helpen!</p>
+            <button class="cta-button" onclick="openChatSupport()">Chat met Guus</button>
+        </div>
+    </div>
+
+    <!-- ChatGuusPT Widget Integration -->
+    <script src="http://localhost:3000/widget.js"></script>
+    <script>
+        // Initialize ChatGuusPT
+        const chatGuus = ChatGuus.init({
+            webhookUrl: 'http://localhost:3000/api/chat', // Local development
+            // webhookUrl: 'https://jouw-n8n-instance.com/webhook/chatguus', // Production
+            theme: 'koepel',
+            welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen?',
+            primaryColor: '#2563eb',
+            position: 'bottom-right',
+            avatar: '🤖'
+        });
+
+        // Demo interaction functions
+        function askAboutEvents() {
+            chatGuus.open();
+            setTimeout(() => {
+                // Simulate user starting event conversation
+                chatGuus.inputField.value = "Ik wil graag een bedrijfsborrel organiseren";
+                chatGuus.inputField.focus();
+            }, 500);
+        }
+
+        function requestService() {
+            chatGuus.open();
+            setTimeout(() => {
+                chatGuus.inputField.value = "Ik heb een IT probleem, kunnen jullie helpen?";
+                chatGuus.inputField.focus();
+            }, 500);
+        }
+
+        function openChatSupport() {
+            chatGuus.open();
+        }
+
+        // Optional: Auto-open chat for demo purposes
+        // setTimeout(() => {
+        //     chatGuus.open();
+        // }, 2000);
+    </script>
+</body>
+</html>

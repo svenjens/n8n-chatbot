@@ -1,0 +1,249 @@
+{
+  "name": "ChatGuusPT Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatguus",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "sessionIdExpression": "={{ $json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "memory-node", 
+      "name": "Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "agent": "conversationalAgent",
+        "promptType": "define",
+        "text": "Je bent Guus, een vriendelijke en gastvrije assistent van de Koepel. Je helpt zakelijke gebruikers met hun vragen over faciliteiten, evenementen en services.\n\nJe persoonlijkheid:\n- Altijd vriendelijk, open en gastvrij\n- Behulpzaam en proactief\n- Professioneel maar toegankelijk\n- Geduldig en begripvol\n- Enthousiast over de Koepel en haar mogelijkheden\n\nJe taken:\n1. SERVICEVRAGEN: Verzamel informatie volgens het servicerequest formulier en stuur door naar:\n   - Algemeen/overige: welcome@cupolaxs.nl\n   - IT: support@axs-ict.com\n   - Schoonmaak: ralphcassa@gmail.com\n   - Bestaande events: welcome@cupolaxs.nl\n\n2. NIEUWE EVENTS: Vraag door naar:\n   - Type evenement\n   - Waarom de Koepel\n   - Randvoorwaarden (aantal personen, budget)\n   - Stuur door naar: irene@cupolaxs.nl\n\n3. FAQ: Beantwoord vragen met informatie van cupolaxs.nl\n\nAltijd eerst proberen te helpen, dan pas doorverwijzen. Wees specifiek in je vragen om de juiste informatie te verzamelen.",
+        "hasOutputParser": true
+      },
+      "id": "ai-agent-node",
+      "name": "Guus AI Agent", 
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500
+        }
+      },
+      "id": "openai-node",
+      "name": "OpenAI Chat",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1, 
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "={{ $json.message.toLowerCase() }}",
+            "operation": "contains"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.message.toLowerCase() }}",
+              "rightValue": "service,verzoek,aanvraag,hulp nodig,probleem",
+              "operation": "contains"
+            }
+          ]
+        }
+      },
+      "id": "service-check-node",
+      "name": "Check Service Request",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.message.toLowerCase() }}",
+              "rightValue": "event,evenement,organiseren,feest,bijeenkomst",
+              "operation": "contains"
+            }
+          ]
+        }
+      },
+      "id": "event-check-node",
+      "name": "Check Event Inquiry",
+      "type": "n8n-nodes-base.if", 
+      "typeVersion": 1,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": "={{ $env.GOOGLE_SHEETS_ID }}",
+        "sheetName": "Service Requests",
+        "dataMode": "define",
+        "fieldsUi": {
+          "values": [
+            {
+              "fieldId": "Timestamp",
+              "fieldValue": "={{ $now }}"
+            },
+            {
+              "fieldId": "Session ID", 
+              "fieldValue": "={{ $json.sessionId }}"
+            },
+            {
+              "fieldId": "Message",
+              "fieldValue": "={{ $json.message }}"
+            },
+            {
+              "fieldId": "Category",
+              "fieldValue": "Service Request"
+            },
+            {
+              "fieldId": "Status",
+              "fieldValue": "New"
+            }
+          ]
+        }
+      },
+      "id": "sheets-log-node",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@cupolaxs.nl",
+        "toEmail": "={{ $json.routingEmail }}",
+        "subject": "Nieuwe servicevraag via ChatGuusPT",
+        "emailType": "html",
+        "message": "Beste team,<br><br>Er is een nieuwe servicevraag binnengekomen via ChatGuusPT:<br><br><strong>Bericht:</strong><br>{{ $json.message }}<br><br><strong>Sessie ID:</strong> {{ $json.sessionId }}<br><strong>Tijdstip:</strong> {{ $now }}<br><strong>Website:</strong> {{ $json.url }}<br><br>Met vriendelijke groet,<br>ChatGuusPT"
+      },
+      "id": "email-routing-node",
+      "name": "Route Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "response-node",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "Chat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Conversation Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "main": [
+        [
+          {
+            "node": "Guus AI Agent",
+            "type": "main", 
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guus AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Check Service Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Event Inquiry", 
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Service Request": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Route Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Email": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["chatbot", "koepel", "guus"],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

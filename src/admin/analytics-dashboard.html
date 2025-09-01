@@ -358,8 +358,7 @@
                 <select class="filter-select" id="tenantFilter">
                     <option value="all">Alle Tenants</option>
                     <option value="koepel">De Koepel</option>
-                    <option value="fashionstore">Fashion Store</option>
-                    <option value="healthcare">Healthcare</option>
+                    <option value="demo-company">Demo Company</option>
                 </select>
             </div>
             
@@ -526,11 +525,16 @@
             try {
                 showLoading();
                 
-                // Load data from multiple sources
+                // Get current filter values
+                const tenantId = document.getElementById('tenantFilter')?.value || 'all';
+                const period = getPeriodValue();
+                const category = document.getElementById('categoryFilter')?.value || 'all';
+                
+                // Load data from multiple sources with filters
                 const [aiRatingsData, satisfactionData, analyticsData] = await Promise.all([
-                    fetchAIRatings(),
-                    fetchSatisfactionRatings(),
-                    fetchAnalytics()
+                    fetchAIRatings(tenantId, period, category),
+                    fetchSatisfactionRatings(tenantId, period),
+                    fetchAnalytics(tenantId, period)
                 ]);
                 
                 dashboardData.aiRatings = aiRatingsData;
@@ -547,9 +551,28 @@
             }
         }
         
-        async function fetchAIRatings() {
+        function getPeriodValue() {
+            const periodFilter = document.getElementById('periodFilter')?.value || 'month';
+            const periodMap = {
+                'today': '1d',
+                'week': '7d', 
+                'month': '30d',
+                'quarter': '90d'
+            };
+            return periodMap[periodFilter] || '30d';
+        }
+        
+        async function fetchAIRatings(tenantId = 'all', period = '30d', category = 'all') {
             try {
-                const response = await fetch('/.netlify/functions/ai-analytics?action=get_ai_ratings');
+                const params = new URLSearchParams({
+                    action: 'get_ai_ratings',
+                    tenantId,
+                    period,
+                    category,
+                    limit: 100
+                });
+                
+                const response = await fetch(`/.netlify/functions/ai-analytics?${params}`);
                 if (response.ok) {
                     const data = await response.json();
                     return data.ratings || [];
@@ -562,9 +585,14 @@
             return generateMockAIRatings();
         }
         
-        async function fetchSatisfactionRatings() {
+        async function fetchSatisfactionRatings(tenantId = 'all', period = '30d') {
             try {
-                const response = await fetch('/.netlify/functions/satisfaction?action=get_analytics');
+                const params = new URLSearchParams({
+                    tenantId,
+                    period
+                });
+                
+                const response = await fetch(`/.netlify/functions/satisfaction?${params}`);
                 if (response.ok) {
                     return await response.json();
                 }
@@ -576,9 +604,15 @@
             return generateMockSatisfactionData();
         }
         
-        async function fetchAnalytics() {
+        async function fetchAnalytics(tenantId = 'all', period = '30d') {
             try {
-                const response = await fetch('/.netlify/functions/ai-analytics?action=get_dashboard_data');
+                const params = new URLSearchParams({
+                    action: 'get_dashboard_data',
+                    tenantId,
+                    period
+                });
+                
+                const response = await fetch(`/.netlify/functions/ai-analytics?${params}`);
                 if (response.ok) {
                     return await response.json();
                 }
@@ -856,16 +890,15 @@
             `).join('');
         }
         
-        function applyFilters() {
+        async function applyFilters() {
             const tenant = document.getElementById('tenantFilter').value;
             const period = document.getElementById('periodFilter').value;
             const category = document.getElementById('categoryFilter').value;
             
             console.log('Applying filters:', { tenant, period, category });
             
-            // Filter data and update dashboard
-            // Implementation would filter dashboardData based on selected filters
-            updateDashboard();
+            // Reload data with new filters
+            await loadDashboardData();
         }
         
         function exportData(format) {

@@ -594,10 +594,13 @@ class ChatGuusWidget {
           actionType: response.action?.type || null
         };
         
-        // Rate the AI response asynchronously
+        // Rate the AI response asynchronously and store it
         this.aiSelfRating.rateResponse(message, response.message, ratingContext)
           .then(rating => {
             if (rating) {
+              // Store the rating via API
+              this.storeAIRating(rating);
+              
               this.trackEvent('ai_self_rating', {
                 ratingId: rating.id,
                 overallRating: rating.rating.overall,
@@ -871,6 +874,30 @@ Vertel me meer over je plannen!`;
     link.click();
     
     this.trackEvent('user_data_exported');
+  }
+
+  // Store AI self-rating via API
+  async storeAIRating(rating) {
+    try {
+      const response = await fetch('/.netlify/functions/ai-analytics?action=store_ai_rating', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(rating)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to store AI rating: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('AI rating stored:', result.ratingId);
+      
+    } catch (error) {
+      console.warn('Failed to store AI rating:', error);
+      // Don't throw - this shouldn't break the chat flow
+    }
   }
 
   // Enhanced payload for N8N with fingerprinting data

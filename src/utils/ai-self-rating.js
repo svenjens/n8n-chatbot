@@ -118,6 +118,17 @@ Respond in JSON format:
       reasoning: 'Standard response evaluation'
     };
 
+    // Detect question category based on content
+    if (questionLower.includes('event') || questionLower.includes('booking') || questionLower.includes('reserv')) {
+      baseRating.category = 'event_inquiry';
+    } else if (questionLower.includes('service') || questionLower.includes('support') || questionLower.includes('help')) {
+      baseRating.category = 'service_request';
+    } else if (questionLower.includes('wat') || questionLower.includes('hoe') || questionLower.includes('waar') || questionLower.includes('?')) {
+      baseRating.category = 'faq';
+    } else if (questionLower.includes('product') || questionLower.includes('order') || questionLower.includes('buy')) {
+      baseRating.category = 'ecommerce';
+    }
+
     // Adjust rating based on response quality indicators
     if (responseLower.includes('sorry') || responseLower.includes('i don\'t know')) {
       baseRating.helpfulness = 2;

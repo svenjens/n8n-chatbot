@@ -548,7 +548,17 @@
         }
         
         async function fetchAIRatings() {
-            // Simulate AI ratings data
+            try {
+                const response = await fetch('/.netlify/functions/ai-analytics?action=get_ai_ratings');
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.ratings || [];
+                }
+            } catch (error) {
+                console.warn('Could not fetch AI ratings:', error);
+            }
+            
+            // Return mock data if API fails
             return generateMockAIRatings();
         }
         
@@ -568,7 +578,7 @@
         
         async function fetchAnalytics() {
             try {
-                const response = await fetch('/.netlify/functions/analytics?action=get_dashboard_data');
+                const response = await fetch('/.netlify/functions/ai-analytics?action=get_dashboard_data');
                 if (response.ok) {
                     return await response.json();
                 }
@@ -576,7 +586,7 @@
                 console.warn('Could not fetch analytics:', error);
             }
             
-            // Return mock analytics data
+            // Return mock analytics data if API fails
             return generateMockAnalytics();
         }
         
@@ -584,25 +594,67 @@
             updateStatistics();
             updateCharts();
             updateMissingAnswers();
+            updateDataSourceIndicator();
+        }
+
+        function updateDataSourceIndicator() {
+            // Show indicator if we're using real data vs mock data
+            const hasRealAIData = dashboardData.aiRatings && dashboardData.aiRatings.length > 0;
+            const hasRealAnalytics = dashboardData.analytics && dashboardData.analytics.summary;
+            
+            let indicator = document.getElementById('dataSourceIndicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'dataSourceIndicator';
+                indicator.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    right: 24px;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: 500;
+                    z-index: 1000;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                `;
+                document.body.appendChild(indicator);
+            }
+            
+            if (hasRealAIData && hasRealAnalytics) {
+                indicator.innerHTML = '🟢 Live Data';
+                indicator.style.background = '#f6ffed';
+                indicator.style.color = '#52c41a';
+                indicator.style.border = '1px solid #b7eb8f';
+            } else {
+                indicator.innerHTML = '🟡 Demo Data';
+                indicator.style.background = '#fffbe6';
+                indicator.style.color = '#faad14';
+                indicator.style.border = '1px solid #ffe58f';
+            }
         }
         
         function updateStatistics() {
             const analytics = dashboardData.analytics;
             
-            // Update AI Rating
-            const avgAIRating = analytics.averageAIRating || 4.2;
+            // Update AI Rating - use real data from analytics.summary
+            const avgAIRating = analytics.summary?.averageAIRating || analytics.averageAIRating || 0;
             document.getElementById('avgAIRating').textContent = avgAIRating.toFixed(1);
             
-            // Update User Satisfaction
-            const userSatisfaction = analytics.userSatisfactionRate || 87;
+            // Update User Satisfaction - combine with satisfaction data
+            const userSatisfaction = analytics.summary?.userSatisfactionRate || 
+                                   dashboardData.satisfactionRatings?.satisfactionRate || 
+                                   analytics.userSatisfactionRate || 0;
             document.getElementById('userSatisfaction').textContent = userSatisfaction + '%';
             
-            // Update Missing Answers
-            const missingCount = dashboardData.missingAnswers.length;
+            // Update Missing Answers - use real missing answers data
+            const missingCount = analytics.missingAnswers?.total || 
+                                analytics.summary?.missingAnswersCount ||
+                                dashboardData.missingAnswers.length || 0;
             document.getElementById('missingAnswers').textContent = missingCount;
             
-            // Update AI Confidence
-            const aiConfidence = analytics.averageConfidence || 78;
+            // Update AI Confidence - use real confidence data
+            const aiConfidence = analytics.summary?.averageConfidence || 
+                                analytics.averageConfidence || 0;
             document.getElementById('aiConfidence').textContent = aiConfidence + '%';
         }
         
@@ -618,9 +670,19 @@
                 charts.ratings.destroy();
             }
             
-            const dates = getLast30Days();
-            const aiRatingData = dates.map(() => Math.random() * 1 + 3.5); // 3.5-4.5
-            const satisfactionData = dates.map(() => Math.random() * 20 + 75); // 75-95%
+            // Use real trend data if available
+            const trendData = dashboardData.analytics?.aiRatings?.trends || [];
+            const dates = trendData.length > 0 ? 
+                trendData.map(t => new Date(t.date)) : 
+                getLast30Days();
+            
+            const aiRatingData = trendData.length > 0 ?
+                trendData.map(t => parseFloat(t.avgRating) || 0) :
+                dates.map(() => Math.random() * 1 + 3.5); // Fallback to mock data
+                
+            const satisfactionData = trendData.length > 0 ?
+                trendData.map(t => (parseFloat(t.avgRating) || 0) * 20 + 10) : // Convert to percentage
+                dates.map(() => Math.random() * 20 + 75); // Fallback to mock data
             
             charts.ratings = new Chart(ctx, {
                 type: 'line',
@@ -686,13 +748,21 @@
                 charts.category.destroy();
             }
             
-            const categoryData = {
-                'Service Requests': 45,
-                'Event Vragen': 28,
-                'FAQ': 35,
-                'Algemeen': 22,
-                'Onbekend': 12
-            };
+            // Use real category data if available
+            const realCategoryData = dashboardData.analytics?.aiRatings?.categoryBreakdown || {};
+            const categoryData = Object.keys(realCategoryData).length > 0 ? 
+                Object.fromEntries(
+                    Object.entries(realCategoryData).map(([key, value]) => [
+                        getCategoryDisplayName(key), 
+                        value.count || 0
+                    ])
+                ) : {
+                    'Service Requests': 45,
+                    'Event Vragen': 28,
+                    'FAQ': 35,
+                    'Algemeen': 22,
+                    'Onbekend': 12
+                };
             
             charts.category = new Chart(ctx, {
                 type: 'doughnut',
@@ -723,9 +793,23 @@
             });
         }
         
+        function getCategoryDisplayName(category) {
+            const categoryNames = {
+                'service_request': 'Service Requests',
+                'event_inquiry': 'Event Vragen', 
+                'faq': 'FAQ',
+                'general': 'Algemeen',
+                'unknown': 'Onbekend',
+                'ecommerce': 'E-commerce'
+            };
+            return categoryNames[category] || category;
+        }
+
         function updateMissingAnswers() {
             const container = document.getElementById('missingAnswersList');
-            const missingAnswers = dashboardData.missingAnswers;
+            // Use real missing answers data
+            const missingAnswers = dashboardData.analytics?.missingAnswers?.list || 
+                                 dashboardData.missingAnswers || [];
             
             if (missingAnswers.length === 0) {
                 container.innerHTML = `

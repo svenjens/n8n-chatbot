@@ -1,7 +1,46 @@
 /**
  * Netlify Function: Analytics Endpoint
  * Handles user fingerprinting and analytics data
+ * Now with MongoDB Atlas persistent storage
  */
+
+import { 
+  connectToDatabase,
+  generateId 
+} from '../../src/utils/database.js';
+
+// Analytics collection helper
+const AnalyticsDB = {
+  async create(eventData) {
+    await connectToDatabase();
+    const { db } = await connectToDatabase();
+    const collection = db.collection('analytics_events');
+    
+    const result = await collection.insertOne({
+      ...eventData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    return result.insertedId.toString();
+  },
+
+  async find(query = {}, options = {}) {
+    await connectToDatabase();
+    const { db } = await connectToDatabase();
+    const collection = db.collection('analytics_events');
+    
+    return await collection.find(query, options).toArray();
+  },
+
+  async count(query = {}) {
+    await connectToDatabase();
+    const { db } = await connectToDatabase();
+    const collection = db.collection('analytics_events');
+    
+    return await collection.countDocuments(query);
+  }
+};
 
 export const handler = async (event, context) => {
   // Handle CORS preflight
@@ -188,23 +227,27 @@ async function createAnonymousId(fingerprint) {
 }
 
 async function storeAnalyticsEvent(eventData) {
-  // In production, store in your analytics database
-  // For now, we'll just log and potentially send to Google Sheets
-  
   try {
-    // Example: Send to Google Sheets if configured
+    // Store in MongoDB Atlas
+    const eventId = await AnalyticsDB.create(eventData);
+    console.log('📊 Analytics event stored in MongoDB:', eventId);
+    
+    // Optional: Also send to Google Sheets if configured
     if (process.env.GOOGLE_SHEETS_ID && process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       await logToGoogleSheets(eventData);
     }
     
-    // Example: Send to external analytics service
+    // Optional: Send to external analytics service
     if (process.env.ANALYTICS_WEBHOOK_URL) {
       await sendToAnalyticsService(eventData);
     }
     
+    return eventId;
+    
   } catch (error) {
     console.error('Failed to store analytics event:', error);
     // Don't fail the request if analytics storage fails
+    throw error;
   }
 }
 

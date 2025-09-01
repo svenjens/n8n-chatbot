@@ -7,6 +7,11 @@ import { GuusPersonality } from '../../src/server/guus-personality.js';
 import { EmailRouter } from '../../src/server/email-router.js';
 import { ServiceRequestHandler } from '../../src/server/service-request-handler.js';
 import { messageSanitizer } from '../../src/utils/message-sanitizer.js';
+import { 
+  ChatSessionsDB, 
+  connectToDatabase,
+  generateId 
+} from '../../src/utils/database.js';
 
 // Initialize services (singleton pattern for serverless)
 let guusPersonality, emailRouter, serviceHandler;
@@ -179,6 +184,27 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Log chat session to MongoDB
+    try {
+      await logChatSession({
+        sessionId,
+        tenantId: requestData.tenantId || 'default',
+        userMessage: sanitizedMessage,
+        aiResponse: sanitizedResponse,
+        intent: intent?.type,
+        action,
+        metadata: {
+          userAgent,
+          url,
+          language: requestData.language || 'nl',
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (logError) {
+      console.error('Chat session logging failed:', logError);
+      // Continue without logging
+    }
+
     // Return successful response
     return {
       statusCode: 200,
@@ -217,3 +243,69 @@ export const handler = async (event, context) => {
     };
   }
 };
+
+// Helper function to log chat sessions to MongoDB
+async function logChatSession(sessionData) {
+  try {
+    await connectToDatabase();
+    
+    const { sessionId, tenantId, userMessage, aiResponse, intent, action, metadata } = sessionData;
+    
+    // Try to find existing session
+    const existingSession = await ChatSessionsDB.findOne({ sessionId });
+    
+    const messageEntry = {
+      content: userMessage,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    
+    const responseEntry = {
+      content: aiResponse,
+      sender: 'ai',
+      intent,
+      action,
+      timestamp: new Date()
+    };
+    
+    if (existingSession) {
+      // Update existing session with new messages
+      await ChatSessionsDB.updateOne(
+        { sessionId },
+        {
+          $push: { 
+            messages: { $each: [messageEntry, responseEntry] }
+          },
+          $set: { 
+            updatedAt: new Date(),
+            lastActivity: new Date()
+          }
+        }
+      );
+    } else {
+      // Create new session
+      const newSession = {
+        sessionId,
+        tenantId,
+        messages: [messageEntry, responseEntry],
+        metadata: {
+          userAgent: metadata.userAgent,
+          url: metadata.url,
+          language: metadata.language,
+          startTime: new Date()
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastActivity: new Date()
+      };
+      
+      await ChatSessionsDB.create(newSession);
+    }
+    
+    console.log(`📝 Chat session logged: ${sessionId}`);
+    
+  } catch (error) {
+    console.error('Failed to log chat session:', error);
+    throw error;
+  }
+}

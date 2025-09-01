@@ -333,11 +333,8 @@
         </div>
     </div>
 
-    <!-- ChatGuusPT Widget -->
-    <script src="/src/utils/user-fingerprinting.js"></script>
-    <script src="/src/utils/satisfaction-rating.js"></script>
-    <script src="/src/widget/chatguus.js"></script>
-    <link rel="stylesheet" href="/src/widget/chatguus.css">
+    <!-- ChatGuusPT Widget - Netlify Serverless -->
+    <script src="/.netlify/functions/widget"></script>
 
     <script>
         let currentWidget = null;
@@ -362,10 +359,10 @@
                 if (existingToggle) existingToggle.remove();
             }
             
-            // Initialize new widget with satisfaction rating
+            // Initialize new widget with satisfaction rating - Auto-configured for Netlify
             currentWidget = ChatGuus.init({
                 tenantId: tenant,
-                webhookUrl: '/.netlify/functions/chat',
+                // webhookUrl auto-configured to /.netlify/functions/chat
                 
                 // Satisfaction rating configuration
                 enableRating: true,

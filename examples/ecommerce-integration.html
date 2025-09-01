@@ -488,14 +488,13 @@
         };
     </script>
     
-    <!-- Load ChatGuusPT Widget -->
-    <script src="https://chatguuspt.netlify.app/.netlify/functions/widget?tenant=fashionstore"></script>
+    <!-- Load ChatGuusPT Widget - Serverless Netlify -->
+    <script src="/.netlify/functions/widget?tenant=fashionstore"></script>
     <script>
-        // Initialize e-commerce chatbot
+        // Initialize e-commerce chatbot - Auto-configured for Netlify
         ChatGuus.init({
             tenantId: 'fashionstore',
-            webhookUrl: 'https://your-n8n-instance.com/webhook/ecommerce-chat',
-            fallbackUrl: '/.netlify/functions/chat',
+            // webhookUrl auto-configured to /.netlify/functions/chat
             
             // E-commerce branding
             theme: 'fashionstore',

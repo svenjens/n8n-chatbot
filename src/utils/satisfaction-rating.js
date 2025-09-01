@@ -13,12 +13,73 @@ export class SatisfactionRating {
       ratingScale: 5, // 1-5 star rating
       collectFeedback: true,
       storageKey: 'chatguus_ratings',
+      language: 'nl', // Default to Dutch
       ...options
     };
     
     this.currentSession = null;
     this.hasRated = false;
     this.ratingPromptShown = false;
+    
+    // Initialize language pack
+    this.lang = this.getLanguagePack(this.options.language);
+  }
+
+  getLanguagePack(language) {
+    const languages = {
+      'nl': {
+        title: 'Hoe was je ervaring?',
+        subtitle: 'Je feedback helpt ons onze service te verbeteren',
+        placeholder: 'Vertel ons meer over je ervaring (optioneel)...',
+        skipButton: 'Overslaan',
+        submitButton: 'Verstuur Feedback',
+        thankYouTitle: 'Bedankt voor je feedback!',
+        thankYouMessage: 'We waarderen het dat je de tijd hebt genomen om ons te helpen verbeteren.',
+        labels: {
+          1: 'Slecht 😞',
+          2: 'Matig 😕', 
+          3: 'Oké 😐',
+          4: 'Goed 😊',
+          5: 'Uitstekend 🤩'
+        },
+        categories: {
+          helpful: 'Behulpzaam 👍',
+          unhelpful: 'Niet behulpzaam 👎',
+          slow: 'Te langzaam ⏰',
+          fast: 'Snel geholpen ⚡',
+          unclear: 'Onduidelijk 🤔',
+          bug: 'Technisch probleem 🐛',
+          suggestion: 'Suggestie 💡'
+        }
+      },
+      'en': {
+        title: 'How was your experience?',
+        subtitle: 'Your feedback helps us improve our service',
+        placeholder: 'Tell us more about your experience (optional)...',
+        skipButton: 'Skip',
+        submitButton: 'Submit Feedback',
+        thankYouTitle: 'Thank you for your feedback!',
+        thankYouMessage: 'We appreciate you taking the time to help us improve.',
+        labels: {
+          1: 'Poor 😞',
+          2: 'Fair 😕', 
+          3: 'Good 😐',
+          4: 'Very Good 😊',
+          5: 'Excellent 🤩'
+        },
+        categories: {
+          helpful: 'Helpful 👍',
+          unhelpful: 'Not helpful 👎',
+          slow: 'Too slow ⏰',
+          fast: 'Quick help ⚡',
+          unclear: 'Unclear 🤔',
+          bug: 'Bug report 🐛',
+          suggestion: 'Suggestion 💡'
+        }
+      }
+    };
+    
+    return languages[language] || languages['nl'];
   }
 
   initializeSession(sessionId, tenantId) {
@@ -73,35 +134,40 @@ export class SatisfactionRating {
     ratingContainer.className = 'satisfaction-rating';
     ratingContainer.innerHTML = `
       <div class="rating-header">
-        <h4>How was your experience? ⭐</h4>
-        <p>Your feedback helps us improve our service</p>
+        <h4>${this.lang.title} ⭐</h4>
+        <p>${this.lang.subtitle}</p>
       </div>
       
       <div class="rating-stars">
         ${Array.from({length: this.options.ratingScale}, (_, i) => 
           `<button class="star-button" data-rating="${i + 1}">
             <span class="star">⭐</span>
-            <span class="star-label">${this.getStarLabel(i + 1)}</span>
+            <span class="star-label">${this.lang.labels[i + 1]}</span>
           </button>`
         ).join('')}
       </div>
       
       <div class="rating-feedback" style="display: none;">
         <textarea 
-          placeholder="Tell us more about your experience (optional)..."
+          placeholder="${this.lang.placeholder}"
           maxlength="500"
           rows="3"
         ></textarea>
+        <div class="feedback-categories">
+          ${Object.entries(this.lang.categories).map(([key, label]) => 
+            `<button class="feedback-category" data-category="${key}">${label}</button>`
+          ).join('')}
+        </div>
         <div class="feedback-buttons">
-          <button class="skip-feedback">Skip</button>
-          <button class="submit-feedback">Submit Feedback</button>
+          <button class="skip-feedback">${this.lang.skipButton}</button>
+          <button class="submit-feedback">${this.lang.submitButton}</button>
         </div>
       </div>
       
       <div class="rating-thanks" style="display: none;">
         <div class="thanks-icon">🙏</div>
-        <h4>Thank you for your feedback!</h4>
-        <p>We appreciate you taking the time to help us improve.</p>
+        <h4>${this.lang.thankYouTitle}</h4>
+        <p>${this.lang.thankYouMessage}</p>
       </div>
     `;
     
@@ -173,14 +239,7 @@ export class SatisfactionRating {
   }
 
   getStarLabel(rating) {
-    const labels = {
-      1: 'Poor',
-      2: 'Fair', 
-      3: 'Good',
-      4: 'Very Good',
-      5: 'Excellent'
-    };
-    return labels[rating] || '';
+    return this.lang.labels[rating] || '';
   }
 
   async submitRating(rating, feedback, container) {
@@ -420,14 +479,25 @@ export class SatisfactionRating {
     };
   }
 
-  getStarLabels() {
-    return {
-      1: 'Very Poor 😞',
-      2: 'Poor 😕', 
-      3: 'Okay 😐',
-      4: 'Good 😊',
-      5: 'Excellent 🤩'
+  // Auto-detect language from browser or tenant settings
+  detectLanguage(tenantId) {
+    // Check tenant-specific language settings
+    const tenantLanguages = {
+      'koepel': 'nl',
+      'fashionstore': 'en',
+      'healthcare': 'en'
     };
+    
+    if (tenantLanguages[tenantId]) {
+      return tenantLanguages[tenantId];
+    }
+    
+    // Fallback to browser language
+    const browserLang = navigator.language.toLowerCase();
+    if (browserLang.startsWith('nl')) return 'nl';
+    if (browserLang.startsWith('en')) return 'en';
+    
+    return 'nl'; // Default to Dutch
   }
 
   // Rating UI creation for widget
@@ -437,13 +507,13 @@ export class SatisfactionRating {
         <div class="rating-prompt">
           <div class="rating-header">
             <span class="rating-emoji">⭐</span>
-            <h4>How was your experience?</h4>
-            <p>Your feedback helps us improve</p>
+            <h4>${this.lang.title}</h4>
+            <p>${this.lang.subtitle}</p>
           </div>
           
           <div class="rating-stars">
             ${Array.from({length: this.options.ratingScale}, (_, i) => 
-              `<button class="rating-star" data-rating="${i + 1}" title="${this.getStarLabels()[i + 1]}">
+              `<button class="rating-star" data-rating="${i + 1}" title="${this.lang.labels[i + 1]}">
                 <span class="star-icon">⭐</span>
               </button>`
             ).join('')}
@@ -451,33 +521,30 @@ export class SatisfactionRating {
         </div>
         
         <div class="feedback-section" style="display: none;">
-          <h5>Tell us more (optional)</h5>
+          <h5>${this.lang.placeholder.split('(')[0]}</h5>
           <div class="feedback-categories">
-            <button class="feedback-category" data-category="helpful">Helpful 👍</button>
-            <button class="feedback-category" data-category="fast">Fast Response ⚡</button>
-            <button class="feedback-category" data-category="accurate">Accurate Info ✅</button>
-            <button class="feedback-category" data-category="friendly">Friendly 😊</button>
-            <button class="feedback-category" data-category="confusing">Confusing 😕</button>
-            <button class="feedback-category" data-category="slow">Too Slow 🐌</button>
+            ${Object.entries(this.lang.categories).map(([key, label]) => 
+              `<button class="feedback-category" data-category="${key}">${label}</button>`
+            ).join('')}
           </div>
           
           <textarea 
             class="feedback-text"
-            placeholder="Any additional comments? (optional)"
+            placeholder="${this.lang.placeholder}"
             maxlength="500"
             rows="3"
           ></textarea>
           
           <div class="feedback-actions">
-            <button class="skip-btn">Skip</button>
-            <button class="submit-btn">Submit</button>
+            <button class="skip-btn">${this.lang.skipButton}</button>
+            <button class="submit-btn">${this.lang.submitButton}</button>
           </div>
         </div>
         
         <div class="rating-complete" style="display: none;">
           <div class="complete-icon">🙏</div>
-          <h4>Thank you!</h4>
-          <p class="complete-message">We appreciate your feedback</p>
+          <h4>${this.lang.thankYouTitle}</h4>
+          <p class="complete-message">${this.lang.thankYouMessage}</p>
         </div>
       </div>
     `;

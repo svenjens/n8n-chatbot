@@ -79,13 +79,12 @@
         </div>
     </div>
 
-    <!-- ChatGuusPT Widget Integration -->
-    <script src="http://localhost:3000/widget.js"></script>
+    <!-- ChatGuusPT Widget Integration - Netlify Serverless -->
+    <script src="/.netlify/functions/widget"></script>
     <script>
-        // Initialize ChatGuusPT
+        // Initialize ChatGuusPT - Auto-configured for Netlify Functions
         const chatGuus = ChatGuus.init({
-            webhookUrl: 'http://localhost:3000/api/chat', // Local development
-            // webhookUrl: 'https://jouw-n8n-instance.com/webhook/chatguus', // Production
+            // No webhookUrl needed - automatically uses /.netlify/functions/chat
             theme: 'koepel',
             welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen?',
             primaryColor: '#2563eb',

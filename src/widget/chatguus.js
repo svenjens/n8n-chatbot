@@ -46,12 +46,13 @@ class ChatGuusWidget {
       privacyCompliant: true
     });
     
-    // Initialize satisfaction rating system
+    // Initialize satisfaction rating system with language detection
     this.satisfactionRating = new SatisfactionRating({
       enableRating: options.enableRating !== false,
       autoPrompt: options.autoPromptRating !== false,
       collectFeedback: options.collectFeedback !== false,
-      minMessages: options.minMessagesForRating || 3
+      minMessages: options.minMessagesForRating || 3,
+      language: options.language || this.detectLanguage(options.tenantId)
     });
     
     this.init();
@@ -59,6 +60,26 @@ class ChatGuusWidget {
 
   generateSessionId() {
     return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+  }
+
+  detectLanguage(tenantId) {
+    // Check tenant-specific language settings
+    const tenantLanguages = {
+      'koepel': 'nl',
+      'fashionstore': 'en',
+      'healthcare': 'en'
+    };
+    
+    if (tenantLanguages[tenantId]) {
+      return tenantLanguages[tenantId];
+    }
+    
+    // Fallback to browser language
+    const browserLang = navigator.language.toLowerCase();
+    if (browserLang.startsWith('nl')) return 'nl';
+    if (browserLang.startsWith('en')) return 'en';
+    
+    return 'nl'; // Default to Dutch
   }
 
   async init() {

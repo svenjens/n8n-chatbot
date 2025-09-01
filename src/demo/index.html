@@ -212,6 +212,7 @@
                 <button class="test-button secondary" onclick="testServiceRequest()">🛠️ Test Serviceverzoek</button>
                 <button class="test-button secondary" onclick="testEventInquiry()">🎉 Test Event Uitvraag</button>
                 <button class="test-button secondary" onclick="testFAQ()">❓ Test FAQ</button>
+                <button class="test-button secondary" onclick="testSatisfactionRating()">⭐ Test Rating</button>
             </div>
 
             <div id="status-display" style="margin: 20px 0;">
@@ -360,17 +361,28 @@ ChatGuus.init({
     <!-- ChatGuus Widget Integration -->
     <div id="chatguus-widget"></div>
 
-    <script type="module">
-        import ChatGuusWidget from '../widget/chatguus.js';
-
-        // Initialize ChatGuus widget
-        const chatbot = ChatGuusWidget.init({
+    <!-- Load ChatGuusPT Widget -->
+    <script src="/widget.js"></script>
+    
+    <script>
+        // Initialize ChatGuus widget for Netlify deployment
+        const chatbot = ChatGuus.init({
             target: '#chatguus-widget',
-            webhookUrl: '/api/chat', // Fallback to local API for demo
+            webhookUrl: '/.netlify/functions/chat',
+            fallbackUrl: '/.netlify/functions/chat',
             theme: 'koepel',
             welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Welkom bij de demo! Waar kan ik je mee helpen?',
             primaryColor: '#2563eb',
-            position: 'bottom-right'
+            position: 'bottom-right',
+            
+            // Enable all features for demo
+            enableRating: true,
+            enableFingerprinting: true,
+            enableAnalytics: true,
+            collectFeedback: true,
+            autoPromptRating: true,
+            minMessagesForRating: 2,    // Sneller voor demo (was 3)
+            promptDelay: 10000          // 10 seconden (was 30)
         });
 
         // Demo functions
@@ -408,52 +420,94 @@ ChatGuus.init({
             }, 500);
         };
 
-        // Status checking
+        window.testSatisfactionRating = () => {
+            chatbot.open();
+            setTimeout(() => {
+                chatbot.addMessage('Hallo Guus!', 'user');
+                setTimeout(() => {
+                    chatbot.addMessage('Hallo! Leuk je te ontmoeten. Waar kan ik je mee helpen?', 'bot');
+                    setTimeout(() => {
+                        chatbot.addMessage('Bedankt voor je hulp!', 'user');
+                        setTimeout(() => {
+                            chatbot.addMessage('Graag gedaan! Fijn dat ik kon helpen. 😊', 'bot');
+                            // Mark issue as resolved to trigger rating
+                            setTimeout(() => {
+                                chatbot.markIssueResolved();
+                            }, 1000);
+                        }, 1000);
+                    }, 1000);
+                }, 1000);
+            }, 500);
+        };
+
+        // Status checking for Netlify deployment
         async function checkServerStatus() {
             try {
-                const response = await fetch('/health');
+                const response = await fetch('/.netlify/functions/health');
                 const data = await response.json();
                 
-                document.getElementById('server-status').textContent = `Server Online (v${data.version})`;
+                document.getElementById('server-status').textContent = `Netlify Functions Online (v${data.version})`;
                 document.querySelector('#status-display .status-indicator').className = 'status-indicator status-online';
             } catch (error) {
-                document.getElementById('server-status').textContent = 'Server Offline';
+                document.getElementById('server-status').textContent = 'Netlify Functions Offline';
             }
         }
 
         async function checkN8NStatus() {
             try {
-                const response = await fetch('/api/n8n-proxy', {
+                // Check if N8N webhook is configured in environment
+                const response = await fetch('/.netlify/functions/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: 'test', sessionId: 'status-check' })
+                    body: JSON.stringify({ 
+                        message: 'status check', 
+                        sessionId: 'status-check-' + Date.now() 
+                    })
                 });
                 
                 if (response.ok) {
-                    document.getElementById('n8n-status').textContent = 'N8N Connected';
-                    document.querySelectorAll('#status-display .status-indicator')[1].className = 'status-indicator status-online';
+                    const data = await response.json();
+                    if (data.message) {
+                        document.getElementById('n8n-status').textContent = 'Chat Functions Working';
+                        document.querySelectorAll('#status-display .status-indicator')[1].className = 'status-indicator status-online';
+                    } else {
+                        throw new Error('No response message');
+                    }
                 } else {
-                    throw new Error('N8N not available');
+                    throw new Error('Chat function not responding');
                 }
             } catch (error) {
-                document.getElementById('n8n-status').textContent = 'Using Fallback API';
+                document.getElementById('n8n-status').textContent = 'Chat Functions - Demo Mode';
                 document.querySelectorAll('#status-display .status-indicator')[1].className = 'status-indicator status-offline';
             }
         }
 
         async function checkOpenAIStatus() {
             try {
-                const response = await fetch('/api/test-guus?message=test');
-                const data = await response.json();
+                // This will show if OpenAI is configured in Netlify environment
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: 'test openai connection', 
+                        sessionId: 'openai-test-' + Date.now() 
+                    })
+                });
                 
-                if (data.response) {
-                    document.getElementById('openai-status').textContent = 'OpenAI Connected';
-                    document.querySelectorAll('#status-display .status-indicator')[2].className = 'status-indicator status-online';
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.message && !data.message.includes('Sorry')) {
+                        document.getElementById('openai-status').textContent = 'OpenAI Connected';
+                        document.querySelectorAll('#status-display .status-indicator')[2].className = 'status-indicator status-online';
+                    } else {
+                        throw new Error('OpenAI not configured');
+                    }
                 } else {
-                    throw new Error('OpenAI not responding');
+                    throw new Error('OpenAI test failed');
                 }
             } catch (error) {
-                document.getElementById('openai-status').textContent = 'OpenAI Not Configured';
+                document.getElementById('openai-status').textContent = 'OpenAI - Demo Responses';
+                document.querySelectorAll('#status-display .status-indicator')[2].className = 'status-indicator status-offline';
             }
         }
 

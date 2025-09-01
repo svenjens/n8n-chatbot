@@ -712,6 +712,15 @@
   animation: slideInUp 0.3s ease-out;
 }
 
+.satisfaction-rating {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  animation: slideInUp 0.3s ease-out;
+}
+
 .rating-prompt {
   text-align: center;
 }

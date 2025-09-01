@@ -2,7 +2,7 @@
 
 > **Production-ready white-label chatbot solution with N8N workflow automation, OpenAI integration, and serverless deployment**
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/your-badge-id/deploy-status)](https://app.netlify.com/sites/your-site/deploys)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/3cc03a30-096a-450b-a099-f94a61e2b82e/deploy-status)](https://chatguuspt.netlify.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 
@@ -392,40 +392,13 @@ const widget = await generateTenantWidget('healthcare-corp', {
 - **Data Privacy**: GDPR-compliant data handling and retention
 - **Secure Deployment**: Environment variable encryption and secret management
 
----
 
-## 🎓 **Learning Outcomes & Skills Demonstrated**
-
-### **💼 Business & Leadership**
-- **Product Strategy**: Market analysis and feature prioritization
-- **Stakeholder Management**: Requirements gathering and solution design
-- **Cost Optimization**: Serverless architecture for 90% cost reduction
-- **Scalability Planning**: Multi-tenant architecture for business growth
-
-### **🔧 Technical Leadership**
-- **System Design**: End-to-end solution architecture
-- **API Design**: RESTful services with OpenAPI documentation
-- **DevOps**: CI/CD pipelines and automated deployment strategies
-- **Performance Engineering**: Sub-2s response times with global distribution
-
-### **🤖 AI & Automation**
-- **Prompt Engineering**: Custom personality modeling and response optimization
-- **Workflow Automation**: Visual business process automation with N8N
-- **Intent Classification**: Machine learning for conversation routing
-- **Context Management**: Stateful conversation handling in stateless environment
-
-### **☁️ Cloud & Infrastructure**
-- **Serverless Architecture**: Function-as-a-Service design patterns
-- **CDN Strategy**: Global content distribution and edge computing
-- **Monitoring & Alerting**: Production observability and incident response
-- **Security Hardening**: Defense-in-depth security implementation
-
----
 
 ## 📱 **Live Demo & Examples**
 
 ### **🎯 Interactive Demo**
 - **Live Demo**: [https://chatguuspt.netlify.app](https://chatguuspt.netlify.app)
+- **Technical Infrastructure**: [Architecture Documentation](docs/ARCHITECTURE.md)
 - **Admin Dashboard**: [https://chatguuspt.netlify.app/admin](https://chatguuspt.netlify.app/admin)
 - **API Documentation**: [https://chatguuspt.netlify.app/docs](https://chatguuspt.netlify.app/docs)
 

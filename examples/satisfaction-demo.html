@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGuusPT - Satisfaction Rating Demo</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #f8fafc;
+            color: #1f2937;
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .demo-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .demo-scenarios {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .scenario-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .scenario-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .scenario-icon {
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+        
+        .scenario-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .scenario-description {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .demo-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        
+        .demo-button:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        .analytics-preview {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+        
+        .analytics-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #1f2937;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #3b82f6;
+            display: block;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+        
+        .demo-controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+        
+        .control-input {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .control-button {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .control-button:hover {
+            background: #047857;
+        }
+        
+        .info-panel {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .info-panel h3 {
+            color: #1e40af;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-panel p {
+            color: #1e3a8a;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <!-- Header -->
+        <div class="demo-header">
+            <h1>📊 Satisfaction Rating System Demo</h1>
+            <p>Experience how ChatGuusPT collects and analyzes customer satisfaction data</p>
+        </div>
+        
+        <!-- Demo Controls -->
+        <div class="demo-controls">
+            <h3 style="margin-bottom: 1rem;">Demo Settings</h3>
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label class="control-label">Tenant</label>
+                    <select class="control-input" id="demoTenant">
+                        <option value="koepel">De Koepel (Default)</option>
+                        <option value="fashionstore">Fashion Store</option>
+                        <option value="healthcare">Healthcare Corp</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Auto-prompt After</label>
+                    <select class="control-input" id="promptDelay">
+                        <option value="5000">5 seconds</option>
+                        <option value="15000" selected>15 seconds</option>
+                        <option value="30000">30 seconds</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Min Messages</label>
+                    <input type="number" class="control-input" id="minMessages" value="3" min="1" max="10">
+                </div>
+                
+                <div class="control-group">
+                    <button class="control-button" onclick="reinitializeWidget()">🔄 Apply Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Scenarios -->
+        <div class="demo-scenarios">
+            <div class="scenario-card">
+                <div class="scenario-header">
+                    <div class="scenario-icon">✅</div>
+                    <div class="scenario-title">Positive Experience</div>
+                </div>
+                <div class="scenario-description">
+                    Simulate a successful customer interaction where the issue is resolved quickly and efficiently.
+                </div>
+                <button class="demo-button" onclick="runPositiveScenario()">Start Positive Demo</button>
+            </div>
+            
+            <div class="scenario-card">
+                <div class="scenario-header">
+                    <div class="scenario-icon">⚠️</div>
+                    <div class="scenario-title">Negative Experience</div>
+                </div>
+                <div class="scenario-description">
+                    Simulate a problematic interaction to see how the system handles negative feedback and escalation.
+                </div>
+                <button class="demo-button" onclick="runNegativeScenario()">Start Negative Demo</button>
+            </div>
+            
+            <div class="scenario-card">
+                <div class="scenario-header">
+                    <div class="scenario-icon">🔄</div>
+                    <div class="scenario-title">Complex Issue</div>
+                </div>
+                <div class="scenario-description">
+                    Simulate a multi-step conversation that requires escalation to human support.
+                </div>
+                <button class="demo-button" onclick="runComplexScenario()">Start Complex Demo</button>
+            </div>
+            
+            <div class="scenario-card">
+                <div class="scenario-header">
+                    <div class="scenario-icon">🛍️</div>
+                    <div class="scenario-title">E-commerce Support</div>
+                </div>
+                <div class="scenario-description">
+                    Simulate an e-commerce customer asking about order status and product recommendations.
+                </div>
+                <button class="demo-button" onclick="runEcommerceScenario()">Start E-commerce Demo</button>
+            </div>
+        </div>
+
+        <!-- Live Analytics Preview -->
+        <div class="analytics-preview">
+            <h3 class="analytics-title">Live Satisfaction Metrics</h3>
+            <div class="metrics-grid" id="metricsGrid">
+                <div class="metric-item">
+                    <span class="metric-value" id="avgRating">4.2</span>
+                    <div class="metric-label">Average Rating</div>
+                </div>
+                
+                <div class="metric-item">
+                    <span class="metric-value" id="totalRatings">0</span>
+                    <div class="metric-label">Total Ratings</div>
+                </div>
+                
+                <div class="metric-item">
+                    <span class="metric-value" id="responseRate">0%</span>
+                    <div class="metric-label">Response Rate</div>
+                </div>
+                
+                <div class="metric-item">
+                    <span class="metric-value" id="satisfactionRate">0%</span>
+                    <div class="metric-label">Satisfaction Rate</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 1rem;">
+                <button class="control-button" onclick="viewFullDashboard()">📊 View Full Dashboard</button>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="info-panel">
+            <h3>💡 How It Works</h3>
+            <p>
+                The satisfaction rating system automatically prompts users for feedback after meaningful conversations.
+                It tracks sentiment, collects detailed feedback, and provides actionable insights for improving customer experience.
+                Low ratings trigger immediate alerts to support teams for quick resolution.
+            </p>
+        </div>
+    </div>
+
+    <!-- ChatGuusPT Widget -->
+    <script src="/src/utils/user-fingerprinting.js"></script>
+    <script src="/src/utils/satisfaction-rating.js"></script>
+    <script src="/src/widget/chatguus.js"></script>
+    <link rel="stylesheet" href="/src/widget/chatguus.css">
+
+    <script>
+        let currentWidget = null;
+        let demoMetrics = {
+            totalRatings: 0,
+            totalSessions: 0,
+            ratingSum: 0,
+            satisfiedCount: 0
+        };
+
+        function initializeWidget() {
+            const tenant = document.getElementById('demoTenant').value;
+            const promptDelay = parseInt(document.getElementById('promptDelay').value);
+            const minMessages = parseInt(document.getElementById('minMessages').value);
+            
+            // Destroy existing widget if any
+            if (currentWidget) {
+                const existingWidget = document.querySelector('.chatguus-widget');
+                if (existingWidget) existingWidget.remove();
+                
+                const existingToggle = document.querySelector('.chatguus-toggle');
+                if (existingToggle) existingToggle.remove();
+            }
+            
+            // Initialize new widget with satisfaction rating
+            currentWidget = ChatGuus.init({
+                tenantId: tenant,
+                webhookUrl: '/.netlify/functions/chat',
+                
+                // Satisfaction rating configuration
+                enableRating: true,
+                autoPromptRating: true,
+                collectFeedback: true,
+                minMessagesForRating: minMessages,
+                
+                // Enhanced analytics
+                enableFingerprinting: true,
+                enableAnalytics: true,
+                
+                // Demo-specific settings
+                promptDelay: promptDelay,
+                
+                // Tenant-specific branding
+                theme: tenant,
+                primaryColor: getTenantColor(tenant),
+                botName: getTenantBotName(tenant),
+                welcomeMessage: getTenantWelcomeMessage(tenant)
+            });
+            
+            // Override satisfaction rating timing for demo
+            if (currentWidget.satisfactionRating) {
+                currentWidget.satisfactionRating.options.promptDelay = promptDelay;
+                currentWidget.satisfactionRating.options.minMessages = minMessages;
+            }
+            
+            // Listen for rating events
+            setupRatingEventListeners();
+        }
+        
+        function setupRatingEventListeners() {
+            // Override the rating submission to update our demo metrics
+            if (currentWidget && currentWidget.satisfactionRating) {
+                const originalSubmit = currentWidget.satisfactionRating.sendRatingData.bind(currentWidget.satisfactionRating);
+                
+                currentWidget.satisfactionRating.sendRatingData = async function(ratingData) {
+                    // Update demo metrics
+                    demoMetrics.totalRatings++;
+                    demoMetrics.ratingSum += ratingData.rating;
+                    if (ratingData.rating >= 4) {
+                        demoMetrics.satisfiedCount++;
+                    }
+                    
+                    updateMetricsDisplay();
+                    
+                    // Call original method
+                    return await originalSubmit(ratingData);
+                };
+            }
+        }
+        
+        function updateMetricsDisplay() {
+            const avgRating = demoMetrics.totalRatings > 0 ? 
+                (demoMetrics.ratingSum / demoMetrics.totalRatings).toFixed(1) : '0.0';
+            
+            const responseRate = demoMetrics.totalSessions > 0 ? 
+                Math.round((demoMetrics.totalRatings / demoMetrics.totalSessions) * 100) : 0;
+            
+            const satisfactionRate = demoMetrics.totalRatings > 0 ? 
+                Math.round((demoMetrics.satisfiedCount / demoMetrics.totalRatings) * 100) : 0;
+            
+            document.getElementById('avgRating').textContent = avgRating;
+            document.getElementById('totalRatings').textContent = demoMetrics.totalRatings;
+            document.getElementById('responseRate').textContent = responseRate + '%';
+            document.getElementById('satisfactionRate').textContent = satisfactionRate + '%';
+        }
+        
+        function getTenantColor(tenant) {
+            const colors = {
+                koepel: '#2563eb',
+                fashionstore: '#e11d48',
+                healthcare: '#059669'
+            };
+            return colors[tenant] || '#2563eb';
+        }
+        
+        function getTenantBotName(tenant) {
+            const names = {
+                koepel: 'Guus',
+                fashionstore: 'StyleBot',
+                healthcare: 'MedAssist'
+            };
+            return names[tenant] || 'ChatBot';
+        }
+        
+        function getTenantWelcomeMessage(tenant) {
+            const messages = {
+                koepel: 'Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen?',
+                fashionstore: "Hi! I'm StyleBot 👗 How can I help you find the perfect outfit today?",
+                healthcare: 'Hello! I\'m MedAssist. How can I help with your medical inquiry today?'
+            };
+            return messages[tenant] || 'Hello! How can I help you today?';
+        }
+        
+        function reinitializeWidget() {
+            initializeWidget();
+        }
+        
+        // Demo scenarios
+        function runPositiveScenario() {
+            demoMetrics.totalSessions++;
+            
+            if (!currentWidget) initializeWidget();
+            
+            currentWidget.open();
+            
+            const scenario = [
+                { delay: 1000, sender: 'user', message: 'Hi! I need help with my order status' },
+                { delay: 2000, sender: 'bot', message: 'I\'d be happy to help you track your order! Could you provide your order number?' },
+                { delay: 3000, sender: 'user', message: 'Sure, it\'s ORD123456789' },
+                { delay: 2000, sender: 'bot', message: 'Perfect! I found your order. It was shipped yesterday and should arrive tomorrow by 5 PM. Here\'s your tracking number: TRK987654321. Anything else I can help with?' },
+                { delay: 2000, sender: 'user', message: 'That\'s perfect, thank you so much!' },
+                { delay: 1000, action: 'markResolved' },
+                { delay: 3000, action: 'promptRating' }
+            ];
+            
+            runScenario(scenario);
+        }
+        
+        function runNegativeScenario() {
+            demoMetrics.totalSessions++;
+            
+            if (!currentWidget) initializeWidget();
+            
+            currentWidget.open();
+            
+            const scenario = [
+                { delay: 1000, sender: 'user', message: 'I\'m really frustrated! My order was supposed to arrive 3 days ago!' },
+                { delay: 2000, sender: 'bot', message: 'I\'m so sorry to hear about this delay! Let me look into your order right away. Could you provide your order number?' },
+                { delay: 3000, sender: 'user', message: 'ORD987654321 - this is really unacceptable!' },
+                { delay: 2000, sender: 'bot', message: 'I completely understand your frustration. I see there was a shipping delay due to weather. Let me connect you with our customer service manager who can offer compensation for this inconvenience.' },
+                { delay: 2000, sender: 'user', message: 'This chatbot is not helpful at all' },
+                { delay: 1000, action: 'escalateToHuman' },
+                { delay: 5000, action: 'promptRating' }
+            ];
+            
+            runScenario(scenario);
+        }
+        
+        function runComplexScenario() {
+            demoMetrics.totalSessions++;
+            
+            if (!currentWidget) initializeWidget();
+            
+            currentWidget.open();
+            
+            const scenario = [
+                { delay: 1000, sender: 'user', message: 'I need to change my event booking for next week' },
+                { delay: 2000, sender: 'bot', message: 'I\'d be happy to help with your event booking! Could you tell me more about what you need to change?' },
+                { delay: 3000, sender: 'user', message: 'We need to increase from 50 to 75 people and add catering' },
+                { delay: 2000, sender: 'bot', message: 'That\'s a significant change that will affect pricing and setup. Let me connect you with our events team who can handle this modification properly.' },
+                { delay: 2000, sender: 'user', message: 'Okay, but can you give me a rough estimate first?' },
+                { delay: 2000, sender: 'bot', message: 'For complex changes like this, our events specialist Irene will need to review your specific requirements. I\'m connecting you now - she\'ll have exact pricing and availability.' },
+                { delay: 1000, action: 'escalateToHuman' },
+                { delay: 4000, action: 'promptRating' }
+            ];
+            
+            runScenario(scenario);
+        }
+        
+        function runEcommerceScenario() {
+            demoMetrics.totalSessions++;
+            
+            // Switch to fashion store tenant
+            document.getElementById('demoTenant').value = 'fashionstore';
+            reinitializeWidget();
+            
+            setTimeout(() => {
+                currentWidget.open();
+                
+                const scenario = [
+                    { delay: 1000, sender: 'user', message: 'I\'m looking for a dress for a wedding, budget around $150' },
+                    { delay: 2000, sender: 'bot', message: 'Perfect! I\'d love to help you find the ideal wedding guest dress! 👗 What style are you thinking - elegant midi, flowy maxi, or something more fitted?' },
+                    { delay: 3000, sender: 'user', message: 'Something elegant and not too flashy' },
+                    { delay: 2000, sender: 'bot', message: 'Great choice! I have some beautiful elegant midi dresses that would be perfect. They\'re sophisticated but not attention-grabbing. Would you like to see our top recommendations in your budget?' },
+                    { delay: 2000, sender: 'user', message: 'Yes please!' },
+                    { delay: 2000, sender: 'bot', message: 'Here are 3 perfect options:\n\n**1. Classic Navy Midi Dress** - $129\n⭐⭐⭐⭐⭐ Perfect for weddings!\n\n**2. Elegant Floral Wrap Dress** - $145\n⭐⭐⭐⭐ Sophisticated and timeless\n\n**3. Dusty Rose A-Line Dress** - $139\n⭐⭐⭐⭐⭐ Customer favorite!\n\nWould you like more details about any of these?' },
+                    { delay: 3000, sender: 'user', message: 'The navy dress sounds perfect! Thank you so much!' },
+                    { delay: 1000, action: 'markResolved' },
+                    { delay: 4000, action: 'promptRating' }
+                ];
+                
+                runScenario(scenario);
+            }, 1000);
+        }
+        
+        function runScenario(scenario) {
+            let delay = 0;
+            
+            scenario.forEach(step => {
+                delay += step.delay;
+                
+                setTimeout(() => {
+                    if (step.sender) {
+                        if (step.sender === 'user') {
+                            currentWidget.simulateUserMessage(step.message);
+                        } else {
+                            currentWidget.addMessage(step.message, 'bot');
+                        }
+                    } else if (step.action === 'markResolved') {
+                        currentWidget.markIssueResolved();
+                    } else if (step.action === 'escalateToHuman') {
+                        currentWidget.escalateToHuman('complex_issue');
+                    } else if (step.action === 'promptRating') {
+                        currentWidget.promptSatisfactionRating();
+                    }
+                }, delay);
+            });
+        }
+        
+        function viewFullDashboard() {
+            window.open('/src/admin/satisfaction-dashboard.html', '_blank');
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeWidget();
+            
+            // Update metrics every few seconds
+            setInterval(updateMetricsDisplay, 2000);
+        });
+        
+        // Listen for custom rating events
+        document.addEventListener('chatguus-rating-submitted', (event) => {
+            const { rating, feedback, sessionData } = event.detail;
+            
+            console.log('📊 Rating Submitted:', {
+                rating,
+                feedback: feedback?.substring(0, 50) + '...',
+                session: sessionData.sessionId
+            });
+            
+            // Show success notification
+            showNotification(`Rating submitted: ${rating}⭐ Thank you for your feedback!`);
+        });
+        
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #059669;
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                animation: slideInDown 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+    </script>
+    
+    <style>
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+    </style>
+</body>
+</html>

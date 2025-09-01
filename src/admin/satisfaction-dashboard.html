@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGuusPT - Satisfaction Analytics Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .metric-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .metric-icon {
+            font-size: 2rem;
+            margin-right: 1rem;
+        }
+        
+        .metric-title {
+            font-size: 0.9rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-change {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .metric-change.positive {
+            color: #059669;
+        }
+        
+        .metric-change.negative {
+            color: #dc2626;
+        }
+        
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .chart-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #1f2937;
+        }
+        
+        .rating-distribution {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .rating-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .rating-label {
+            min-width: 80px;
+            font-weight: 500;
+        }
+        
+        .rating-progress {
+            flex: 1;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .rating-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc2626 0%, #f59e0b 25%, #eab308 50%, #22c55e 75%, #059669 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .rating-count {
+            min-width: 40px;
+            text-align: right;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        
+        .trends-chart {
+            height: 300px;
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding: 1rem 0;
+            border-bottom: 2px solid #e5e7eb;
+            position: relative;
+        }
+        
+        .trend-bar {
+            background: linear-gradient(to top, #3b82f6, #8b5cf6);
+            border-radius: 4px 4px 0 0;
+            min-width: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .trend-bar:hover {
+            filter: brightness(1.1);
+            transform: scaleY(1.05);
+        }
+        
+        .trend-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+        
+        .insights-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+        
+        .insights-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .insights-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+        }
+        
+        .insights-title .icon {
+            margin-right: 0.5rem;
+        }
+        
+        .insight-item {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .insight-item.negative {
+            border-left-color: #dc2626;
+            background: #fef2f2;
+        }
+        
+        .insight-item.positive {
+            border-left-color: #059669;
+            background: #f0fdf4;
+        }
+        
+        .insight-priority {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .insight-priority.high {
+            color: #dc2626;
+        }
+        
+        .insight-priority.medium {
+            color: #f59e0b;
+        }
+        
+        .insight-priority.low {
+            color: #059669;
+        }
+        
+        .feedback-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .feedback-item {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .feedback-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .feedback-rating {
+            font-size: 1.2rem;
+        }
+        
+        .feedback-date {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+        
+        .feedback-text {
+            color: #374151;
+            font-style: italic;
+        }
+        
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+        
+        .control-input {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .refresh-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: #2563eb;
+        }
+        
+        .export-btn {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-left: 0.5rem;
+        }
+        
+        .export-btn:hover {
+            background: #047857;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Satisfaction Analytics</h1>
+            <p>Real-time customer satisfaction insights for ChatGuusPT</p>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label class="control-label">Tenant</label>
+                    <select class="control-input" id="tenantSelect">
+                        <option value="">All Tenants</option>
+                        <option value="koepel">De Koepel</option>
+                        <option value="fashionstore">Fashion Store</option>
+                        <option value="healthcare">Healthcare Corp</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Time Period</label>
+                    <select class="control-input" id="periodSelect">
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d" selected>Last 30 Days</option>
+                        <option value="90d">Last 90 Days</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Actions</label>
+                    <div>
+                        <button class="refresh-btn" onclick="refreshDashboard()">🔄 Refresh</button>
+                        <button class="export-btn" onclick="exportData()">📊 Export</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon">⭐</div>
+                    <div class="metric-title">Average Rating</div>
+                </div>
+                <div class="metric-value" id="avgRating">4.2</div>
+                <div class="metric-change positive">
+                    <span>↗️ +0.3 from last period</span>
+                </div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon">📊</div>
+                    <div class="metric-title">Total Ratings</div>
+                </div>
+                <div class="metric-value" id="totalRatings">127</div>
+                <div class="metric-change positive">
+                    <span>↗️ +23% from last period</span>
+                </div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon">😊</div>
+                    <div class="metric-title">Satisfaction Rate</div>
+                </div>
+                <div class="metric-value" id="satisfactionRate">78%</div>
+                <div class="metric-change positive">
+                    <span>↗️ +5% from last period</span>
+                </div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon">📈</div>
+                    <div class="metric-title">Response Rate</div>
+                </div>
+                <div class="metric-value" id="responseRate">23%</div>
+                <div class="metric-change negative">
+                    <span>↘️ -2% from last period</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3 class="chart-title">Rating Distribution</h3>
+                <div class="rating-distribution" id="ratingDistribution">
+                    <div class="rating-bar">
+                        <div class="rating-label">⭐⭐⭐⭐⭐ (5)</div>
+                        <div class="rating-progress">
+                            <div class="rating-fill" style="width: 45%"></div>
+                        </div>
+                        <div class="rating-count">45</div>
+                    </div>
+                    <div class="rating-bar">
+                        <div class="rating-label">⭐⭐⭐⭐ (4)</div>
+                        <div class="rating-progress">
+                            <div class="rating-fill" style="width: 32%"></div>
+                        </div>
+                        <div class="rating-count">32</div>
+                    </div>
+                    <div class="rating-bar">
+                        <div class="rating-label">⭐⭐⭐ (3)</div>
+                        <div class="rating-progress">
+                            <div class="rating-fill" style="width: 18%"></div>
+                        </div>
+                        <div class="rating-count">18</div>
+                    </div>
+                    <div class="rating-bar">
+                        <div class="rating-label">⭐⭐ (2)</div>
+                        <div class="rating-progress">
+                            <div class="rating-fill" style="width: 8%"></div>
+                        </div>
+                        <div class="rating-count">8</div>
+                    </div>
+                    <div class="rating-bar">
+                        <div class="rating-label">⭐ (1)</div>
+                        <div class="rating-progress">
+                            <div class="rating-fill" style="width: 5%"></div>
+                        </div>
+                        <div class="rating-count">5</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h3 class="chart-title">Satisfaction Trends</h3>
+                <div class="trends-chart" id="trendsChart">
+                    <!-- Trend bars will be generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights Section -->
+        <div class="insights-section">
+            <div class="insights-card">
+                <h3 class="insights-title">
+                    <span class="icon">🚨</span>
+                    Areas for Improvement
+                </h3>
+                <div id="improvementAreas">
+                    <div class="insight-item negative">
+                        <div class="insight-priority high">High Priority</div>
+                        <div><strong>Response Time:</strong> 12 users mentioned slow responses during peak hours</div>
+                    </div>
+                    <div class="insight-item negative">
+                        <div class="insight-priority medium">Medium Priority</div>
+                        <div><strong>Product Search:</strong> 8 users found product search results confusing</div>
+                    </div>
+                    <div class="insight-item negative">
+                        <div class="insight-priority low">Low Priority</div>
+                        <div><strong>Size Guide:</strong> 5 users requested more detailed size information</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="insights-card">
+                <h3 class="insights-title">
+                    <span class="icon">🌟</span>
+                    What's Working Well
+                </h3>
+                <div id="successFactors">
+                    <div class="insight-item positive">
+                        <div class="insight-priority high">Strength</div>
+                        <div><strong>Personality:</strong> 89% of users love the friendly and helpful tone</div>
+                    </div>
+                    <div class="insight-item positive">
+                        <div class="insight-priority high">Strength</div>
+                        <div><strong>Accuracy:</strong> Product recommendations are highly relevant and useful</div>
+                    </div>
+                    <div class="insight-item positive">
+                        <div class="insight-priority medium">Strength</div>
+                        <div><strong>Order Support:</strong> Quick and accurate order status updates</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Feedback -->
+        <div class="chart-card" style="margin-top: 2rem;">
+            <h3 class="chart-title">Recent Feedback</h3>
+            <div class="feedback-list" id="recentFeedback">
+                <!-- Feedback items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dashboard functionality
+        let currentData = null;
+        
+        async function loadDashboardData() {
+            try {
+                const tenant = document.getElementById('tenantSelect').value;
+                const period = document.getElementById('periodSelect').value;
+                
+                // In production, this would fetch from the API
+                const response = await fetch(`/.netlify/functions/satisfaction?tenant=${tenant}&period=${period}`);
+                const data = await response.json();
+                
+                currentData = data;
+                updateDashboard(data);
+                
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+                // Use mock data for demo
+                updateDashboard(getMockData());
+            }
+        }
+        
+        function updateDashboard(data) {
+            // Update key metrics
+            document.getElementById('avgRating').textContent = data.summary.averageRating.toFixed(1);
+            document.getElementById('totalRatings').textContent = data.summary.totalRatings;
+            document.getElementById('satisfactionRate').textContent = data.summary.satisfactionRate + '%';
+            document.getElementById('responseRate').textContent = data.summary.responseRate + '%';
+            
+            // Update rating distribution
+            updateRatingDistribution(data.distribution);
+            
+            // Update trends chart
+            updateTrendsChart(data.trends.daily);
+            
+            // Update recent feedback
+            updateRecentFeedback(data.recentFeedback || []);
+        }
+        
+        function updateRatingDistribution(distribution) {
+            const container = document.getElementById('ratingDistribution');
+            const total = Object.values(distribution).reduce((sum, count) => sum + count, 0);
+            
+            container.innerHTML = '';
+            
+            for (let rating = 5; rating >= 1; rating--) {
+                const count = distribution[rating] || 0;
+                const percentage = total > 0 ? (count / total) * 100 : 0;
+                
+                const barElement = document.createElement('div');
+                barElement.className = 'rating-bar';
+                barElement.innerHTML = `
+                    <div class="rating-label">${'⭐'.repeat(rating)} (${rating})</div>
+                    <div class="rating-progress">
+                        <div class="rating-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="rating-count">${count}</div>
+                `;
+                
+                container.appendChild(barElement);
+            }
+        }
+        
+        function updateTrendsChart(trendData) {
+            const container = document.getElementById('trendsChart');
+            const maxRating = Math.max(...trendData.map(d => d.averageRating));
+            
+            container.innerHTML = '';
+            
+            trendData.forEach((day, index) => {
+                const height = (day.averageRating / maxRating) * 250; // Max height 250px
+                
+                const bar = document.createElement('div');
+                bar.className = 'trend-bar';
+                bar.style.height = height + 'px';
+                bar.title = `${day.date}: ${day.averageRating.toFixed(1)} ⭐ (${day.totalRatings} ratings)`;
+                
+                const label = document.createElement('div');
+                label.className = 'trend-label';
+                label.textContent = new Date(day.date).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                
+                bar.appendChild(label);
+                container.appendChild(bar);
+            });
+        }
+        
+        function updateRecentFeedback(feedback) {
+            const container = document.getElementById('recentFeedback');
+            
+            if (feedback.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 2rem;">No recent feedback available</p>';
+                return;
+            }
+            
+            container.innerHTML = feedback.map(item => `
+                <div class="feedback-item">
+                    <div class="feedback-header">
+                        <div class="feedback-rating">${'⭐'.repeat(item.rating)}</div>
+                        <div class="feedback-date">${new Date(item.timestamp).toLocaleDateString()}</div>
+                    </div>
+                    ${item.feedback ? `<div class="feedback-text">"${item.feedback}"</div>` : ''}
+                    <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
+                        Session: ${item.sessionDuration}ms | Messages: ${item.messageCount} | Tenant: ${item.tenantId}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function getMockData() {
+            return {
+                summary: {
+                    averageRating: 4.2,
+                    totalRatings: 127,
+                    satisfactionRate: 78,
+                    responseRate: 23
+                },
+                distribution: {
+                    5: 45,
+                    4: 32,
+                    3: 18,
+                    2: 8,
+                    1: 5
+                },
+                trends: {
+                    daily: Array.from({length: 7}, (_, i) => ({
+                        date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        averageRating: 3.8 + Math.random() * 1.4,
+                        totalRatings: Math.floor(Math.random() * 20) + 5
+                    })).reverse()
+                },
+                recentFeedback: [
+                    {
+                        rating: 5,
+                        feedback: "Amazing service! The chatbot understood exactly what I needed and helped me find the perfect dress for my event.",
+                        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+                        sessionDuration: 45000,
+                        messageCount: 6,
+                        tenantId: 'fashionstore'
+                    },
+                    {
+                        rating: 2,
+                        feedback: "The bot was slow to respond and couldn't help me with my return request. Had to wait for a human agent.",
+                        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+                        sessionDuration: 180000,
+                        messageCount: 12,
+                        tenantId: 'koepel'
+                    },
+                    {
+                        rating: 4,
+                        feedback: "Very helpful with order tracking. Quick and accurate information!",
+                        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+                        sessionDuration: 30000,
+                        messageCount: 4,
+                        tenantId: 'fashionstore'
+                    }
+                ]
+            };
+        }
+        
+        function refreshDashboard() {
+            const btn = document.querySelector('.refresh-btn');
+            btn.textContent = '🔄 Loading...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                loadDashboardData();
+                btn.textContent = '🔄 Refresh';
+                btn.disabled = false;
+            }, 1000);
+        }
+        
+        function exportData() {
+            if (!currentData) {
+                alert('No data to export. Please refresh the dashboard first.');
+                return;
+            }
+            
+            const exportData = {
+                exported: new Date().toISOString(),
+                tenant: document.getElementById('tenantSelect').value || 'all',
+                period: document.getElementById('periodSelect').value,
+                data: currentData
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `satisfaction-analytics-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+        
+        // Event listeners
+        document.getElementById('tenantSelect').addEventListener('change', loadDashboardData);
+        document.getElementById('periodSelect').addEventListener('change', loadDashboardData);
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+            
+            // Auto-refresh every 5 minutes
+            setInterval(loadDashboardData, 5 * 60 * 1000);
+        });
+        
+        // Real-time updates (if WebSocket available)
+        if (typeof WebSocket !== 'undefined') {
+            try {
+                const ws = new WebSocket('wss://your-websocket-endpoint.com/satisfaction');
+                
+                ws.onmessage = (event) => {
+                    const update = JSON.parse(event.data);
+                    if (update.type === 'new_rating') {
+                        // Update dashboard with new rating
+                        loadDashboardData();
+                        
+                        // Show notification
+                        showNotification(`New ${update.rating}⭐ rating received!`);
+                    }
+                };
+                
+            } catch (error) {
+                console.log('WebSocket not available for real-time updates');
+            }
+        }
+        
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #059669;
+                color: white;
+                padding: 1rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                animation: slideInRight 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+    </script>
+    
+    <style>
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</body>
+</html>

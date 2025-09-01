@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Store - Premium Online Shopping</title>
+    
+    <!-- E-commerce specific meta tags -->
+    <meta name="description" content="Discover the latest fashion trends at Fashion Store Premium. Free shipping over $75, easy returns, and personal styling advice.">
+    <meta name="keywords" content="fashion, clothing, shoes, accessories, online shopping, style advice">
+    
+    <!-- Open Graph for social sharing -->
+    <meta property="og:title" content="Fashion Store Premium - Latest Fashion Trends">
+    <meta property="og:description" content="Shop the latest fashion with free shipping and personal styling advice">
+    <meta property="og:image" content="/assets/fashionstore-og-image.jpg">
+    <meta property="og:url" content="https://fashionstore.com">
+    
+    <style>
+        /* E-commerce website styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background: #ffffff;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #e11d48 0%, #f97316 100%);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+        
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+        
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), 
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%23f3f4f6" width="1200" height="600"/><text x="600" y="300" text-anchor="middle" fill="%236b7280" font-family="Arial" font-size="24">Fashion Hero Image</text></svg>');
+            background-size: cover;
+            background-position: center;
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+        }
+        
+        .hero-content h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .hero-content p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .cta-button {
+            background: #e11d48;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .cta-button:hover {
+            background: #be185d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+        }
+        
+        .features {
+            padding: 4rem 2rem;
+            background: #f9fafb;
+        }
+        
+        .features-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #1f2937;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #e11d48;
+        }
+        
+        .products {
+            padding: 4rem 2rem;
+        }
+        
+        .products-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .products h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(45deg, #f3f4f6, #e5e7eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+        
+        .product-info {
+            padding: 1.5rem;
+        }
+        
+        .product-info h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .product-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #e11d48;
+            margin-bottom: 0.5rem;
+        }
+        
+        .product-rating {
+            color: #f59e0b;
+            margin-bottom: 1rem;
+        }
+        
+        .add-to-cart {
+            width: 100%;
+            background: #e11d48;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .add-to-cart:hover {
+            background: #be185d;
+        }
+        
+        .footer {
+            background: #1f2937;
+            color: white;
+            padding: 3rem 2rem 2rem;
+            text-align: center;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .footer-links a {
+            color: #d1d5db;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        /* Chat widget customization for e-commerce */
+        .chatguus-widget.tenant-fashionstore {
+            --primary: #e11d48;
+            --secondary: #f97316;
+            --accent: #8b5cf6;
+        }
+        
+        .chatguus-widget.tenant-fashionstore .chat-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        }
+        
+        .chatguus-widget.tenant-fashionstore .product-card {
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .features-grid,
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">Fashion Store</a>
+            <ul class="nav-links">
+                <li><a href="#women">Women</a></li>
+                <li><a href="#men">Men</a></li>
+                <li><a href="#accessories">Accessories</a></li>
+                <li><a href="#sale">Sale</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Discover Your Perfect Style</h1>
+            <p>Premium fashion with personal styling advice and free shipping over $75</p>
+            <a href="#products" class="cta-button">Shop Now</a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="features-container">
+            <h2>Why Choose Fashion Store?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🛍️</div>
+                    <h3>Personal Styling</h3>
+                    <p>Get personalized outfit recommendations from our AI stylist. Chat with StyleBot for instant fashion advice tailored to your taste and budget.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🚚</div>
+                    <h3>Free Shipping</h3>
+                    <p>Free standard shipping on orders over $75. Need it faster? Free expedited shipping on orders over $150. Plus easy returns within 30 days.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📏</div>
+                    <h3>Perfect Fit Guarantee</h3>
+                    <p>Our interactive size guide and fit specialists ensure you get the perfect fit every time. Free exchanges if it's not quite right.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">⭐</div>
+                    <h3>Customer Reviews</h3>
+                    <p>Real reviews from verified customers help you make confident choices. Plus our AI analyzes reviews to give you fit and quality insights.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Trend Alerts</h3>
+                    <p>Stay ahead of the curve with our trend forecasting. Get notified about new arrivals, sales, and styles that match your preferences.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">💎</div>
+                    <h3>VIP Rewards</h3>
+                    <p>Earn points with every purchase. Unlock exclusive perks, early access to sales, and personal stylist consultations as you shop more.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section class="products" id="products">
+        <div class="products-container">
+            <h2>Featured Products</h2>
+            <div class="products-grid">
+                <div class="product-card">
+                    <div class="product-image">Elegant Midi Dress</div>
+                    <div class="product-info">
+                        <h3>Elegant Midi Dress</h3>
+                        <div class="product-price">$89.99 <span style="text-decoration: line-through; color: #6b7280;">$119.99</span></div>
+                        <div class="product-rating">⭐⭐⭐⭐⭐ (127 reviews)</div>
+                        <button class="add-to-cart">Add to Cart</button>
+                    </div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-image">Designer Sneakers</div>
+                    <div class="product-info">
+                        <h3>Designer Sneakers</h3>
+                        <div class="product-price">$159.99</div>
+                        <div class="product-rating">⭐⭐⭐⭐⭐ (89 reviews)</div>
+                        <button class="add-to-cart">Add to Cart</button>
+                    </div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-image">Luxury Handbag</div>
+                    <div class="product-info">
+                        <h3>Luxury Handbag</h3>
+                        <div class="product-price">$249.99</div>
+                        <div class="product-rating">⭐⭐⭐⭐⭐ (203 reviews)</div>
+                        <button class="add-to-cart">Add to Cart</button>
+                    </div>
+                </div>
+                
+                <div class="product-card">
+                    <div class="product-image">Cashmere Sweater</div>
+                    <div class="product-info">
+                        <h3>Cashmere Sweater</h3>
+                        <div class="product-price">$179.99 <span style="text-decoration: line-through; color: #6b7280;">$229.99</span></div>
+                        <div class="product-rating">⭐⭐⭐⭐⭐ (156 reviews)</div>
+                        <button class="add-to-cart">Add to Cart</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#shipping">Shipping Info</a>
+                <a href="#returns">Returns</a>
+                <a href="#size-guide">Size Guide</a>
+                <a href="#contact">Contact</a>
+                <a href="#privacy">Privacy</a>
+                <a href="#terms">Terms</a>
+            </div>
+            <p>&copy; 2024 Fashion Store Premium. All rights reserved.</p>
+            <p>Powered by ChatGuusPT - AI Customer Service</p>
+        </div>
+    </footer>
+
+    <!-- ChatGuusPT Widget Integration -->
+    <script>
+        // E-commerce specific configuration
+        window.CHATGUUS_CONFIG = {
+            platform: 'netlify',
+            tenant: 'fashionstore',
+            
+            // E-commerce features
+            features: {
+                productSearch: true,
+                orderTracking: true,
+                sizeGuide: true,
+                styleAdvice: true,
+                wishlistManagement: true,
+                returnSupport: true,
+                shippingInfo: true,
+                promotionsAlerts: true,
+                personalShopper: true
+            },
+            
+            // Enhanced analytics for e-commerce
+            analytics: {
+                trackPurchaseIntent: true,
+                trackProductViews: true,
+                trackStylePreferences: true,
+                trackSizeQueries: true,
+                segmentByBehavior: true,
+                conversionTracking: true
+            },
+            
+            // E-commerce UI customizations
+            ui: {
+                showProductCards: true,
+                showPriceComparison: true,
+                showStockStatus: true,
+                showReviews: true,
+                enableWishlist: true,
+                showPromoCodes: true
+            }
+        };
+    </script>
+    
+    <!-- Load ChatGuusPT Widget -->
+    <script src="https://chatguuspt.netlify.app/.netlify/functions/widget?tenant=fashionstore"></script>
+    <script>
+        // Initialize e-commerce chatbot
+        ChatGuus.init({
+            tenantId: 'fashionstore',
+            webhookUrl: 'https://your-n8n-instance.com/webhook/ecommerce-chat',
+            fallbackUrl: '/.netlify/functions/chat',
+            
+            // E-commerce branding
+            theme: 'fashionstore',
+            primaryColor: '#e11d48',
+            secondaryColor: '#f97316',
+            
+            // E-commerce personality
+            botName: 'StyleBot',
+            avatar: '/assets/stylebot-avatar.png',
+            welcomeMessage: "Hi! I'm StyleBot 👗 How can I help you find the perfect outfit today?",
+            
+            // Enhanced features
+            enableFingerprinting: true,
+            enableAnalytics: true,
+            enablePersonalization: true,
+            
+            // E-commerce specific options
+            catalog: {
+                apiUrl: 'https://fashionstore.myshopify.com/api',
+                searchEnabled: true,
+                recommendationsEnabled: true,
+                inventoryCheck: true
+            },
+            
+            // Position for e-commerce (less intrusive)
+            position: 'bottom-right',
+            
+            // Custom styling for e-commerce
+            customCSS: `
+                .chatguus-widget.tenant-fashionstore {
+                    --primary: #e11d48;
+                    --secondary: #f97316;
+                    --accent: #8b5cf6;
+                    --border-radius: 12px;
+                    font-family: 'Inter', sans-serif;
+                }
+                
+                .chatguus-widget.tenant-fashionstore .chat-header {
+                    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+                    border-radius: var(--border-radius) var(--border-radius) 0 0;
+                }
+                
+                .chatguus-widget.tenant-fashionstore .product-recommendation {
+                    border: 2px solid var(--primary);
+                    border-radius: 8px;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    background: #fef2f2;
+                }
+                
+                .chatguus-widget.tenant-fashionstore .promo-code {
+                    background: linear-gradient(45deg, var(--accent), var(--primary));
+                    color: white;
+                    padding: 0.5rem 1rem;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    text-align: center;
+                    margin: 0.5rem 0;
+                }
+            `
+        });
+        
+        // E-commerce specific event tracking
+        document.addEventListener('DOMContentLoaded', () => {
+            // Track product card interactions
+            document.querySelectorAll('.product-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const productName = card.querySelector('h3').textContent;
+                    window.chatGuusFingerprinting?.trackEvent('product_viewed', {
+                        productName,
+                        price: card.querySelector('.product-price').textContent,
+                        section: 'featured'
+                    });
+                });
+            });
+            
+            // Track add to cart clicks
+            document.querySelectorAll('.add-to-cart').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const productCard = button.closest('.product-card');
+                    const productName = productCard.querySelector('h3').textContent;
+                    const price = productCard.querySelector('.product-price').textContent;
+                    
+                    window.chatGuusFingerprinting?.trackEvent('add_to_cart', {
+                        productName,
+                        price,
+                        source: 'featured_products'
+                    });
+                    
+                    // Simulate add to cart
+                    button.textContent = 'Added! ✓';
+                    button.style.background = '#059669';
+                    setTimeout(() => {
+                        button.textContent = 'Add to Cart';
+                        button.style.background = '#e11d48';
+                    }, 2000);
+                });
+            });
+            
+            // Track CTA clicks
+            document.querySelectorAll('.cta-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    window.chatGuusFingerprinting?.trackEvent('cta_clicked', {
+                        buttonText: button.textContent,
+                        location: 'hero_section'
+                    });
+                });
+            });
+        });
+        
+        // Simulate e-commerce interactions for demo
+        setTimeout(() => {
+            // Show a promo notification through the chatbot
+            if (window.ChatGuus && Math.random() > 0.7) {
+                setTimeout(() => {
+                    window.ChatGuus.addMessage(
+                        "🎉 **Flash Sale Alert!** 25% off all dresses today only! Use code FLASH25 at checkout. Want to see our dress collection?",
+                        'bot'
+                    );
+                }, 5000);
+            }
+        }, 3000);
+        
+        // Demo: Simulate returning customer
+        const isReturningCustomer = localStorage.getItem('fashionstore_customer');
+        if (isReturningCustomer) {
+            setTimeout(() => {
+                if (window.ChatGuus) {
+                    window.ChatGuus.addMessage(
+                        "Welcome back! 👋 I see you were looking at our new arrivals last time. We just got some amazing pieces that match your style preferences!",
+                        'bot'
+                    );
+                }
+            }, 8000);
+        } else {
+            localStorage.setItem('fashionstore_customer', 'true');
+        }
+    </script>
+
+    <!-- Demo: E-commerce specific chat scenarios -->
+    <script>
+        // Add demo buttons for testing e-commerce scenarios
+        const demoPanel = document.createElement('div');
+        demoPanel.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            font-family: Inter, sans-serif;
+            font-size: 0.9rem;
+            max-width: 250px;
+        `;
+        
+        demoPanel.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 0.5rem; color: #e11d48;">
+                🧪 E-commerce Demo
+            </div>
+            <div style="font-size: 0.8rem; color: #6b7280; margin-bottom: 1rem;">
+                Test different scenarios:
+            </div>
+            <button onclick="testProductSearch()" style="width: 100%; margin: 0.25rem 0; padding: 0.5rem; border: 1px solid #e11d48; background: white; color: #e11d48; border-radius: 4px; cursor: pointer;">
+                Product Search
+            </button>
+            <button onclick="testOrderTracking()" style="width: 100%; margin: 0.25rem 0; padding: 0.5rem; border: 1px solid #e11d48; background: white; color: #e11d48; border-radius: 4px; cursor: pointer;">
+                Order Tracking
+            </button>
+            <button onclick="testStyleAdvice()" style="width: 100%; margin: 0.25rem 0; padding: 0.5rem; border: 1px solid #e11d48; background: white; color: #e11d48; border-radius: 4px; cursor: pointer;">
+                Style Advice
+            </button>
+            <button onclick="testSizeGuide()" style="width: 100%; margin: 0.25rem 0; padding: 0.5rem; border: 1px solid #e11d48; background: white; color: #e11d48; border-radius: 4px; cursor: pointer;">
+                Size Guide
+            </button>
+            <button onclick="testReturnSupport()" style="width: 100%; margin: 0.25rem 0; padding: 0.5rem; border: 1px solid #e11d48; background: white; color: #e11d48; border-radius: 4px; cursor: pointer;">
+                Return Support
+            </button>
+        `;
+        
+        document.body.appendChild(demoPanel);
+        
+        // Demo functions
+        window.testProductSearch = () => {
+            if (window.ChatGuus) {
+                window.ChatGuus.open();
+                setTimeout(() => {
+                    window.ChatGuus.simulateUserMessage("I'm looking for a red dress for a dinner party, budget around $100");
+                }, 500);
+            }
+        };
+        
+        window.testOrderTracking = () => {
+            if (window.ChatGuus) {
+                window.ChatGuus.open();
+                setTimeout(() => {
+                    window.ChatGuus.simulateUserMessage("Can you help me track my order FS1234567890?");
+                }, 500);
+            }
+        };
+        
+        window.testStyleAdvice = () => {
+            if (window.ChatGuus) {
+                window.ChatGuus.open();
+                setTimeout(() => {
+                    window.ChatGuus.simulateUserMessage("I need outfit ideas for a job interview in a creative agency");
+                }, 500);
+            }
+        };
+        
+        window.testSizeGuide = () => {
+            if (window.ChatGuus) {
+                window.ChatGuus.open();
+                setTimeout(() => {
+                    window.ChatGuus.simulateUserMessage("I usually wear size M but I'm not sure about your sizing. Can you help?");
+                }, 500);
+            }
+        };
+        
+        window.testReturnSupport = () => {
+            if (window.ChatGuus) {
+                window.ChatGuus.open();
+                setTimeout(() => {
+                    window.ChatGuus.simulateUserMessage("I received my order but the dress doesn't fit well. How can I return it?");
+                }, 500);
+            }
+        };
+    </script>
+</body>
+</html>

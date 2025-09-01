@@ -4,6 +4,7 @@
  */
 
 import { UserFingerprinting, trackChatEvent } from '../utils/user-fingerprinting.js';
+import { SatisfactionRating } from '../utils/satisfaction-rating.js';
 
 class ChatGuusWidget {
   constructor(options = {}) {
@@ -45,6 +46,14 @@ class ChatGuusWidget {
       privacyCompliant: true
     });
     
+    // Initialize satisfaction rating system
+    this.satisfactionRating = new SatisfactionRating({
+      enableRating: options.enableRating !== false,
+      autoPrompt: options.autoPromptRating !== false,
+      collectFeedback: options.collectFeedback !== false,
+      minMessages: options.minMessagesForRating || 3
+    });
+    
     this.init();
   }
 
@@ -59,6 +68,10 @@ class ChatGuusWidget {
     
     // Apply personalized configuration
     await this.applyPersonalization();
+    
+    // Initialize satisfaction rating for this session
+    this.satisfactionRating.initializeSession(this.sessionId, this.options.tenantId);
+    this.satisfactionRating.integrateWithChatWidget(this);
     
     this.addWelcomeMessage();
     
@@ -853,6 +866,55 @@ Vertel me meer over je plannen!`;
       
       throw error;
     }
+  }
+
+  // Satisfaction rating methods
+  promptSatisfactionRating() {
+    if (this.satisfactionRating.ratingPromptShown) return;
+    
+    const ratingPrompt = this.satisfactionRating.createRatingPrompt();
+    this.addMessage(ratingPrompt.message, 'bot', { showRating: true });
+  }
+
+  markIssueResolved() {
+    this.satisfactionRating.trackInteraction('issue_resolved');
+    
+    // Auto-prompt rating after issue resolution
+    setTimeout(() => {
+      this.promptSatisfactionRating();
+    }, 2000);
+  }
+
+  escalateToHuman(reason = 'user_request') {
+    this.satisfactionRating.trackInteraction('escalated_to_human', { reason });
+    
+    this.addMessage(
+      "I'm connecting you with one of our team members who can better assist you. They'll be with you shortly! 👨‍💼",
+      'bot'
+    );
+  }
+
+  // Simulate user message (for demo purposes)
+  simulateUserMessage(message) {
+    if (!this.isOpen) {
+      this.open();
+    }
+    
+    setTimeout(() => {
+      this.inputField.value = message;
+      this.sendMessage();
+    }, 500);
+  }
+
+  // Get satisfaction metrics for this session
+  getSessionSatisfactionData() {
+    return {
+      sessionId: this.sessionId,
+      messageCount: this.messages.length,
+      duration: this.getSessionDuration(),
+      hasRating: this.satisfactionRating.hasRated,
+      interactions: this.satisfactionRating.currentSession?.interactions || []
+    };
   }
 
   // Public API methods

@@ -544,8 +544,8 @@ npm run test:security # Security scanning
 **Sven Jens** - *Senior Software Engineer & AI Solutions Architect*
 
 - **LinkedIn**: [linkedin.com/in/svenjens](https://linkedin.com/in/svenjens)
-- **Portfolio**: [svenjens.dev](https://svenjens.dev)
-- **Email**: [sven@example.com](mailto:sven@example.com)
+- **Portfolio**: [svenjens.dev](https://sven-jens.nl)
+- **Email**: [sven@sven-jens.nl](mailto:sven@sven-jens.nl)
 - **GitHub**: [github.com/svenjens](https://github.com/svenjens)
 
 ### **🎯 Professional Focus**
@@ -558,8 +558,4 @@ npm run test:security # Security scanning
 
 MIT License - See [LICENSE](LICENSE) for details.
 
-**Built with ❤️ for modern web applications**
-
----
-
-*This project represents advanced software engineering practices suitable for **Lead Developer**, **Solutions Architect**, or **Engineering Manager** positions in the Dutch technology sector.*
+K

@@ -52,7 +52,8 @@ class ChatGuusWidget {
       enableRating: options.enableRating !== false,
       autoPrompt: options.autoPromptRating !== false,
       collectFeedback: options.collectFeedback !== false,
-      minMessages: options.minMessagesForRating || 3,
+      minMessages: options.minMessagesForRating || 6,
+      promptDelay: options.ratingPromptDelay || 120000, // 2 minutes
       language: options.language || this.detectLanguage(options.tenantId)
     });
 

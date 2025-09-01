@@ -8,8 +8,8 @@ export class SatisfactionRating {
     this.options = {
       enableRating: true,
       autoPrompt: true,
-      promptDelay: 30000, // 30 seconds after conversation
-      minMessages: 3, // Minimum messages before prompting
+      promptDelay: 120000, // 2 minutes after conversation start
+      minMessages: 6, // Minimum messages before prompting (more realistic)
       ratingScale: 5, // 1-5 star rating
       collectFeedback: true,
       storageKey: 'chatguus_ratings',
@@ -126,7 +126,14 @@ export class SatisfactionRating {
     }
     
     const sessionDuration = Date.now() - this.currentSession.startTime;
-    return sessionDuration > this.options.promptDelay;
+    const hasMinimumDuration = sessionDuration > this.options.promptDelay;
+    
+    // Only prompt if there's been some inactivity (no messages in last 30 seconds)
+    const lastInteractionTime = this.currentSession.interactions?.slice(-1)[0]?.timestamp || this.currentSession.startTime;
+    const timeSinceLastInteraction = Date.now() - lastInteractionTime;
+    const hasInactivity = timeSinceLastInteraction > 30000; // 30 seconds of inactivity
+    
+    return hasMinimumDuration && hasInactivity;
   }
 
   createRatingInterface() {
@@ -786,11 +793,14 @@ export class SatisfactionRating {
         timestamp: Date.now()
       });
       
-      // Check if we should prompt for rating
-      if (sender === 'bot' && this.shouldPromptRating()) {
+      // Check if we should prompt for rating (only after bot responses and with delay)
+      if (sender === 'bot') {
+        // Check for rating prompt after a longer delay to avoid interrupting active conversations
         setTimeout(() => {
-          this.promptForRating(chatWidget);
-        }, 2000); // Wait 2 seconds after bot response
+          if (this.shouldPromptRating()) {
+            this.promptForRating(chatWidget);
+          }
+        }, 30000); // Wait 30 seconds after bot response to see if conversation continues
       }
       
       return result;

@@ -245,7 +245,7 @@
                 <button class="test-button secondary" onclick="testEventInquiry()">🎉 Test Event Uitvraag</button>
                 <button class="test-button secondary" onclick="testFAQ()">❓ Test FAQ</button>
                 <button class="test-button secondary" onclick="testSatisfactionRating()">⭐ Test Rating</button>
-                <button class="test-button secondary" onclick="window.open('/src/admin/analytics-dashboard.html', '_blank')">🤖 AI Analytics</button>
+                <button class="test-button secondary" onclick="window.open('/admin/analytics-dashboard.html', '_blank')">🤖 AI Analytics</button>
             </div>
 
             <div id="status-display" style="margin: 20px 0;">
@@ -617,14 +617,23 @@ ChatGuus.init({
             trackMissingAnswers: true,   // Track questions AI can't answer well
             collectFeedback: true,
             autoPromptRating: true,
-            minMessagesForRating: 2,    // Sneller voor demo (was 3)
-            promptDelay: 10000,         // 10 seconden (was 30)
+            minMessagesForRating: 6,    // Realistic amount (was 2)
+            ratingPromptDelay: 120000,  // 2 minutes (was 10 seconds)
             aiConfidenceThreshold: 0.7  // Threshold for flagging low-confidence responses
         });
 
         // Demo functions
         window.openChat = () => {
             chatbot.open();
+        };
+
+        // Demo satisfaction rating trigger (for testing)
+        window.testSatisfactionRating = () => {
+            if (chatbot && chatbot.satisfactionRating) {
+                chatbot.satisfactionRating.ratingPromptShown = false; // Reset flag
+                chatbot.satisfactionRating.hasRated = false; // Reset rating
+                chatbot.satisfactionRating.promptForRating(chatbot);
+            }
         };
 
         window.testServiceRequest = () => {

@@ -1,0 +1,50 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/widget.js"
+  to = "/.netlify/functions/widget"
+  status = 200
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/admin/index.html"
+  status = 200
+
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+
+[[headers]]
+  for = "/widget.js"
+  [headers.values]
+    Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=300"
+    Access-Control-Allow-Origin = "*"
+
+# Environment variables (set in Netlify UI)
+# OPENAI_API_KEY
+# N8N_WEBHOOK_URL
+# EMAIL_GENERAL
+# EMAIL_IT
+# EMAIL_CLEANING  
+# EMAIL_EVENTS
+# GOOGLE_SHEETS_ID
+# GOOGLE_SERVICE_ACCOUNT_EMAIL
+# GOOGLE_SERVICE_ACCOUNT_KEY

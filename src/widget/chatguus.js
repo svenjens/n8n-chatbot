@@ -3,16 +3,32 @@
  * Vriendelijke chatbot voor de Koepel zakelijke gebruikers
  */
 
+import { UserFingerprinting, trackChatEvent } from '../utils/user-fingerprinting.js';
+
 class ChatGuusWidget {
   constructor(options = {}) {
+    // Auto-detect deployment environment
+    const isNetlify = window.location.hostname.includes('netlify.app') || 
+                     window.location.hostname.includes('.netlify.com') ||
+                     window.CHATGUUS_CONFIG?.platform === 'netlify';
+    
+    const defaultWebhookUrl = isNetlify ? 
+      '/.netlify/functions/chat' : 
+      (options.webhookUrl || process.env.N8N_WEBHOOK_URL || '/api/chat');
+
     this.options = {
       target: '#chatguus-widget',
-      webhookUrl: options.webhookUrl || process.env.N8N_WEBHOOK_URL,
+      webhookUrl: defaultWebhookUrl,
+      fallbackUrl: isNetlify ? null : '/api/chat',
       theme: 'koepel',
       welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen?',
       position: 'bottom-right',
       primaryColor: '#2563eb',
       avatar: '/assets/guus-avatar.png',
+      tenantId: 'koepel',
+      retryAttempts: 2,
+      timeoutMs: 8000,
+      isNetlify,
       ...options
     };
     
@@ -21,6 +37,14 @@ class ChatGuusWidget {
     this.messages = [];
     this.isTyping = false;
     
+    // Initialize user fingerprinting
+    this.userFingerprinting = new UserFingerprinting({
+      enableFingerprinting: options.enableFingerprinting !== false,
+      enableAnalytics: options.enableAnalytics !== false,
+      respectDNT: true,
+      privacyCompliant: true
+    });
+    
     this.init();
   }
 
@@ -28,11 +52,22 @@ class ChatGuusWidget {
     return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
   }
 
-  init() {
+  async init() {
     this.createStyles();
     this.createWidget();
     this.bindEvents();
+    
+    // Apply personalized configuration
+    await this.applyPersonalization();
+    
     this.addWelcomeMessage();
+    
+    // Track widget initialization
+    this.trackEvent('widget_initialized', {
+      tenantId: this.options.tenantId,
+      theme: this.options.theme,
+      position: this.options.position
+    });
   }
 
   createStyles() {
@@ -341,6 +376,15 @@ class ChatGuusWidget {
     
     if (this.isOpen) {
       this.inputField.focus();
+      this.trackEvent('widget_opened', {
+        method: 'toggle_button',
+        messagesCount: this.messages.length
+      });
+    } else {
+      this.trackEvent('widget_closed', {
+        method: 'toggle_button',
+        sessionDuration: this.getSessionDuration()
+      });
     }
   }
 
@@ -378,9 +422,54 @@ class ChatGuusWidget {
   renderMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.className = `chatguus-message ${message.sender}`;
-    messageElement.textContent = message.content;
+    
+    // Clean and format message content
+    const cleanContent = this.formatMessageContent(message.content);
+    messageElement.innerHTML = cleanContent;
+    
+    // Add timestamp
+    const timestamp = document.createElement('div');
+    timestamp.className = 'chatguus-message-time';
+    timestamp.textContent = new Date(message.timestamp).toLocaleTimeString('nl-NL', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    messageElement.appendChild(timestamp);
     
     this.messagesContainer.appendChild(messageElement);
+  }
+
+  formatMessageContent(content) {
+    // Strip HTML tags but preserve some formatting
+    let cleaned = content
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove styles
+      .replace(/<[^>]*>/g, '') // Remove all other HTML tags
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'");
+
+    // Convert common patterns to proper formatting
+    cleaned = cleaned
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold**
+      .replace(/\*(.*?)\*/g, '<em>$1</em>') // *italic*
+      .replace(/`(.*?)`/g, '<code>$1</code>') // `code`
+      .replace(/\n/g, '<br>') // Line breaks
+      .replace(/• /g, '• ') // Bullet points
+      .replace(/\d+\. /g, (match) => `<strong>${match}</strong>`); // Numbered lists
+
+    // Handle emoji and special characters
+    cleaned = this.processEmojis(cleaned);
+
+    return cleaned;
+  }
+
+  processEmojis(text) {
+    // Ensure emojis are properly displayed
+    return text.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, 
+      (emoji) => `<span class="emoji">${emoji}</span>`);
   }
 
   showTyping() {
@@ -415,6 +504,13 @@ class ChatGuusWidget {
     const message = this.inputField.value.trim();
     if (!message) return;
 
+    // Track message sending
+    this.trackEvent('message_sent', {
+      messageLength: message.length,
+      messagesInSession: this.messages.length,
+      sessionDuration: this.getSessionDuration()
+    });
+
     // Add user message
     this.addMessage(message, 'user');
     this.inputField.value = '';
@@ -423,9 +519,20 @@ class ChatGuusWidget {
     // Show typing indicator
     this.showTyping();
 
+    const startTime = Date.now();
+
     try {
       // Send to N8N webhook
       const response = await this.sendToN8N(message);
+      
+      const responseTime = Date.now() - startTime;
+      
+      // Track successful response
+      this.trackEvent('message_received', {
+        responseTime,
+        hasAction: !!response.action,
+        actionType: response.action?.type || null
+      });
       
       // Hide typing and show response
       this.hideTyping();
@@ -434,10 +541,21 @@ class ChatGuusWidget {
       // Handle any special actions (email routing, etc.)
       if (response.action) {
         this.handleSpecialAction(response.action);
+        this.trackEvent('action_triggered', {
+          actionType: response.action.type,
+          category: response.action.category
+        });
       }
       
     } catch (error) {
       console.error('ChatGuus Error:', error);
+      
+      // Track error
+      this.trackEvent('message_error', {
+        error: error.message,
+        responseTime: Date.now() - startTime
+      });
+      
       this.hideTyping();
       this.addMessage('Sorry, er ging iets mis. Probeer het opnieuw of neem direct contact op via welcome@cupolaxs.nl', 'bot');
     }
@@ -449,22 +567,69 @@ class ChatGuusWidget {
       sessionId: this.sessionId,
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
-      url: window.location.href
+      url: window.location.href,
+      tenantId: this.options.tenantId
     };
 
-    const response = await fetch(this.options.webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Try primary webhook URL first
+    try {
+      const response = await this.makeRequest(this.options.webhookUrl, payload);
+      return response;
+    } catch (error) {
+      console.warn('Primary webhook failed:', error);
+      
+      // Try fallback URL if available
+      if (this.options.fallbackUrl && this.options.fallbackUrl !== this.options.webhookUrl) {
+        try {
+          console.log('Trying fallback URL...');
+          const response = await this.makeRequest(this.options.fallbackUrl, payload);
+          return response;
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+          throw fallbackError;
+        }
+      }
+      
+      throw error;
     }
+  }
 
-    return await response.json();
+  async makeRequest(url, payload, attempt = 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.options.timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // Retry logic
+      if (attempt < this.options.retryAttempts && 
+          (error.name === 'AbortError' || error.message.includes('fetch'))) {
+        
+        console.log(`Retrying request (attempt ${attempt + 1}/${this.options.retryAttempts})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+        
+        return this.makeRequest(url, payload, attempt + 1);
+      }
+      
+      throw error;
+    }
   }
 
   handleSpecialAction(action) {
@@ -482,41 +647,212 @@ class ChatGuusWidget {
   }
 
   showServiceRequestForm() {
-    const formMessage = `
-      <div class="service-request-form">
-        <p><strong>Serviceverzoek Formulier</strong></p>
-        <p>Ik help je graag met je serviceverzoek. Kun je me de volgende informatie geven?</p>
-        <ul>
-          <li>Wat is de aard van je verzoek?</li>
-          <li>Wanneer moet dit uitgevoerd worden?</li>
-          <li>Zijn er specifieke vereisten?</li>
-        </ul>
-        <p>Geef zoveel mogelijk details, dan kan ik je verzoek direct naar het juiste team doorsturen!</p>
-      </div>
-    `;
+    const formMessage = `**Serviceverzoek Formulier**
+
+Ik help je graag met je serviceverzoek. Kun je me de volgende informatie geven?
+
+• Wat is de aard van je verzoek?
+• Wanneer moet dit uitgevoerd worden?
+• Zijn er specifieke vereisten?
+
+Geef zoveel mogelijk details, dan kan ik je verzoek direct naar het juiste team doorsturen! 🛠️`;
+    
     this.addMessage(formMessage, 'bot');
   }
 
   showEventInquiryForm() {
-    const eventMessage = `
-      <div class="event-inquiry-form">
-        <p><strong>Nieuwe Event Uitvraag</strong></p>
-        <p>Leuk dat je een evenement wilt organiseren in de Koepel! Ik heb wat informatie nodig:</p>
-        <ul>
-          <li>🎉 <strong>Type evenement:</strong> Wat voor soort evenement is het?</li>
-          <li>🏢 <strong>Waarom de Koepel:</strong> Wat trekt je aan in onze locatie?</li>
-          <li>👥 <strong>Aantal personen:</strong> Hoeveel gasten verwacht je?</li>
-          <li>💰 <strong>Budget:</strong> Wat is je budget indicatie?</li>
-          <li>📅 <strong>Datum:</strong> Wanneer wil je het evenement houden?</li>
-        </ul>
-        <p>Vertel me meer over je plannen!</p>
-      </div>
-    `;
+    const eventMessage = `**Nieuwe Event Uitvraag** 🎉
+
+Leuk dat je een evenement wilt organiseren in de Koepel! Ik heb wat informatie nodig:
+
+🎉 **Type evenement:** Wat voor soort evenement is het?
+🏢 **Waarom de Koepel:** Wat trekt je aan in onze locatie?
+👥 **Aantal personen:** Hoeveel gasten verwacht je?
+💰 **Budget:** Wat is je budget indicatie?
+📅 **Datum:** Wanneer wil je het evenement houden?
+
+Vertel me meer over je plannen!`;
+    
     this.addMessage(eventMessage, 'bot');
   }
 
   scrollToBottom() {
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+  }
+
+  // Personalization methods
+  async applyPersonalization() {
+    try {
+      const personalizedConfig = this.userFingerprinting.getPersonalizedConfig(this.options);
+      
+      // Apply theme preferences
+      if (personalizedConfig.theme === 'dark') {
+        this.widget.classList.add('dark-theme');
+      }
+      
+      // Apply accessibility preferences
+      if (personalizedConfig.accessibility.reducedMotion) {
+        this.widget.classList.add('reduced-motion');
+      }
+      
+      if (personalizedConfig.accessibility.highContrast) {
+        this.widget.classList.add('high-contrast');
+      }
+      
+      // Adjust for device type
+      if (personalizedConfig.device.isMobile) {
+        this.widget.classList.add('mobile-optimized');
+      }
+      
+      // Personalized welcome message for returning users
+      if (personalizedConfig.user.isReturning) {
+        this.options.welcomeMessage = 'Welkom terug! Waar kan ik je mee helpen? 😊';
+      }
+      
+    } catch (error) {
+      console.warn('Personalization failed:', error);
+    }
+  }
+
+  // Analytics and tracking methods
+  trackEvent(eventType, eventData = {}) {
+    if (this.userFingerprinting) {
+      this.userFingerprinting.trackEvent(eventType, {
+        ...eventData,
+        tenantId: this.options.tenantId,
+        widgetVersion: '1.0.0'
+      });
+    }
+  }
+
+  getSessionDuration() {
+    if (!this.sessionStartTime) {
+      this.sessionStartTime = Date.now();
+      return 0;
+    }
+    return Date.now() - this.sessionStartTime;
+  }
+
+  // Privacy methods
+  showPrivacyNotice() {
+    const privacyNotice = `
+      **Privacy & Cookies** 🔒
+      
+      We gebruiken functionele cookies en anonyme analytics om je ervaring te verbeteren.
+      
+      • **Functioneel**: Chat functionaliteit en voorkeuren
+      • **Analytics**: Anonieme gebruiksstatistieken  
+      • **Geen tracking**: We verkopen geen data aan derden
+      
+      Door te chatten ga je akkoord met ons privacy beleid.
+    `;
+    
+    this.addMessage(privacyNotice, 'bot');
+  }
+
+  getUserPrivacyInfo() {
+    return this.userFingerprinting?.getPrivacyInfo() || {
+      fingerprintingEnabled: false,
+      analyticsEnabled: false,
+      dntRespected: true
+    };
+  }
+
+  clearUserData() {
+    if (this.userFingerprinting) {
+      this.userFingerprinting.clearFingerprint();
+    }
+    
+    // Clear chat history
+    this.messages = [];
+    this.messagesContainer.innerHTML = '';
+    this.addWelcomeMessage();
+    
+    this.trackEvent('user_data_cleared');
+  }
+
+  exportUserData() {
+    const chatHistory = this.messages.map(msg => ({
+      content: msg.content,
+      sender: msg.sender,
+      timestamp: msg.timestamp
+    }));
+    
+    const userData = {
+      chatHistory,
+      session: {
+        id: this.sessionId,
+        duration: this.getSessionDuration(),
+        messagesCount: this.messages.length
+      },
+      privacy: this.getUserPrivacyInfo(),
+      exported: new Date().toISOString()
+    };
+    
+    // Download as JSON
+    const dataStr = JSON.stringify(userData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `chatguus-data-${this.sessionId}.json`;
+    link.click();
+    
+    this.trackEvent('user_data_exported');
+  }
+
+  // Enhanced payload for N8N with fingerprinting data
+  async sendToN8N(message) {
+    const analyticsData = this.userFingerprinting?.getAnalyticsData() || {};
+    
+    const payload = {
+      message,
+      sessionId: this.sessionId,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      tenantId: this.options.tenantId,
+      
+      // Enhanced analytics data
+      user: {
+        fingerprint: analyticsData.fingerprint,
+        session: analyticsData.session,
+        isReturning: analyticsData.user?.isReturning || false,
+        timezone: analyticsData.user?.timezone,
+        language: analyticsData.user?.language,
+        device: analyticsData.user?.platform
+      },
+      
+      // Context data
+      context: {
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        referrer: document.referrer,
+        pageTitle: document.title,
+        messagesInSession: this.messages.length,
+        sessionDuration: this.getSessionDuration()
+      }
+    };
+
+    // Try primary webhook URL first
+    try {
+      const response = await this.makeRequest(this.options.webhookUrl, payload);
+      return response;
+    } catch (error) {
+      console.warn('Primary webhook failed:', error);
+      
+      // Try fallback URL if available
+      if (this.options.fallbackUrl && this.options.fallbackUrl !== this.options.webhookUrl) {
+        try {
+          console.log('Trying fallback URL...');
+          const response = await this.makeRequest(this.options.fallbackUrl, payload);
+          return response;
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+          throw fallbackError;
+        }
+      }
+      
+      throw error;
+    }
   }
 
   // Public API methods

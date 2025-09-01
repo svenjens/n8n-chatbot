@@ -422,12 +422,59 @@
 .chatguus-message-time {
   font-size: 11px;
   color: var(--chatguus-text-muted);
-  margin-top: 4px;
+  margin-top: 8px;
   text-align: right;
+  opacity: 0.7;
 }
 
 .chatguus-message.bot .chatguus-message-time {
   text-align: left;
+}
+
+/* Message Content Formatting */
+.chatguus-message strong {
+  font-weight: 600;
+  color: inherit;
+}
+
+.chatguus-message em {
+  font-style: italic;
+}
+
+.chatguus-message code {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.9em;
+}
+
+.chatguus-message.user code {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.chatguus-message .emoji {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+/* Prevent HTML injection styling */
+.chatguus-message * {
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.chatguus-message img,
+.chatguus-message video,
+.chatguus-message iframe,
+.chatguus-message object,
+.chatguus-message embed {
+  display: none !important; /* Security: prevent media injection */
+}
+
+.chatguus-message script,
+.chatguus-message style {
+  display: none !important; /* Security: prevent script injection */
 }
 
 /* Service Request Form Styling */

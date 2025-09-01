@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGuusPT - Tenant Management Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h2 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #2563eb;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2563eb;
+            display: block;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .tenant-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .tenant-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .tenant-item:hover {
+            border-color: #2563eb;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+        }
+
+        .tenant-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .tenant-info {
+            flex: 1;
+        }
+
+        .tenant-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        .tenant-domain {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .tenant-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-active {
+            background: #10b981;
+        }
+
+        .status-inactive {
+            background: #ef4444;
+        }
+
+        .tenant-features {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .feature-tag {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .tenant-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-top: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .color-input {
+            width: 60px;
+            height: 40px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: 0.2s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.2s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #2563eb;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .modal-close:hover {
+            color: #ef4444;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tenant-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Tenant Management Dashboard</h1>
+            <p>Beheer multi-tenant configuraties en white labeling voor ChatGuusPT</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Statistics Card -->
+            <div class="card">
+                <h2>📊 Statistieken</h2>
+                <div class="stats-grid" id="stats-grid">
+                    <div class="loading">Laden...</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="card">
+                <h2>⚡ Snelle Acties</h2>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <button class="btn btn-primary" onclick="openCreateTenantModal()">
+                        ➕ Nieuwe Tenant Toevoegen
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportTenants()">
+                        📤 Export Tenant Configuraties
+                    </button>
+                    <button class="btn btn-secondary" onclick="openImportModal()">
+                        📥 Import Tenant Configuraties
+                    </button>
+                    <a href="http://localhost:5173" class="btn btn-success" target="_blank">
+                        🎯 Open Demo
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tenants List -->
+        <div class="card">
+            <h2>🏢 Tenants Overzicht</h2>
+            <div id="tenants-list" class="tenant-list">
+                <div class="loading">Tenants laden...</div>
+            </div>
+        </div>
+
+        <!-- Create/Edit Tenant Form -->
+        <div class="form-section" id="tenant-form" style="display: none;">
+            <h2 id="form-title">➕ Nieuwe Tenant Toevoegen</h2>
+            <form id="tenant-form-element">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Tenant ID *</label>
+                        <input type="text" name="id" class="form-input" required 
+                               placeholder="bijv. mijn-bedrijf" pattern="[a-z0-9-]+">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Bedrijfsnaam *</label>
+                        <input type="text" name="name" class="form-input" required 
+                               placeholder="bijv. Mijn Bedrijf BV">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Domain *</label>
+                        <input type="text" name="domain" class="form-input" required 
+                               placeholder="bijv. mijnbedrijf.nl">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Bot Naam *</label>
+                        <input type="text" name="botName" class="form-input" required 
+                               placeholder="bijv. Assistant, Helper, etc.">
+                    </div>
+                </div>
+
+                <h3 style="margin: 30px 0 20px 0; color: #2563eb;">🎨 Branding</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Primaire Kleur</label>
+                        <input type="color" name="primaryColor" class="color-input" value="#2563eb">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Secundaire Kleur</label>
+                        <input type="color" name="secondaryColor" class="color-input" value="#64748b">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Avatar Emoji</label>
+                        <input type="text" name="avatar" class="form-input" 
+                               placeholder="🤖" maxlength="2">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Logo URL</label>
+                        <input type="url" name="logo" class="form-input" 
+                               placeholder="https://example.com/logo.png">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Welkomstbericht *</label>
+                    <textarea name="welcomeMessage" class="form-input form-textarea" required 
+                              placeholder="Hallo! Ik ben [Bot Naam] van [Bedrijf]. Waar kan ik je mee helpen?"></textarea>
+                </div>
+
+                <h3 style="margin: 30px 0 20px 0; color: #2563eb;">📧 Email Routing</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Algemeen Email *</label>
+                        <input type="email" name="emailGeneral" class="form-input" required 
+                               placeholder="info@bedrijf.nl">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">IT Support Email</label>
+                        <input type="email" name="emailIT" class="form-input" 
+                               placeholder="it@bedrijf.nl">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Events Email</label>
+                        <input type="email" name="emailEvents" class="form-input" 
+                               placeholder="events@bedrijf.nl">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Support Email</label>
+                        <input type="email" name="emailSupport" class="form-input" 
+                               placeholder="support@bedrijf.nl">
+                    </div>
+                </div>
+
+                <h3 style="margin: 30px 0 20px 0; color: #2563eb;">⚙️ Features</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span style="display: flex; align-items: center; gap: 10px;">
+                                Service Requests
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="featureServiceRequests" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span style="display: flex; align-items: center; gap: 10px;">
+                                Event Inquiries
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="featureEventInquiries" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span style="display: flex; align-items: center; gap: 10px;">
+                                FAQ System
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="featureFAQ" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span style="display: flex; align-items: center; gap: 10px;">
+                                Email Routing
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="featureEmailRouting" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <h3 style="margin: 30px 0 20px 0; color: #2563eb;">🔗 N8N Configuratie</h3>
+                <div class="form-group">
+                    <label class="form-label">N8N Webhook URL</label>
+                    <input type="url" name="webhookUrl" class="form-input" 
+                           placeholder="https://jouw-n8n.com/webhook/tenant-chatbot">
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 30px;">
+                    <button type="submit" class="btn btn-primary">💾 Opslaan</button>
+                    <button type="button" class="btn btn-secondary" onclick="cancelForm()">❌ Annuleren</button>
+                    <button type="button" class="btn btn-success" onclick="previewTenant()">👁️ Preview</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Tenant Modal -->
+    <div id="createTenantModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>➕ Nieuwe Tenant Toevoegen</h2>
+                <button class="modal-close" onclick="closeModal('createTenantModal')">&times;</button>
+            </div>
+            <p>Een nieuwe tenant toevoegen voor white labeling. Elke tenant krijgt zijn eigen branding, personality en configuratie.</p>
+            <button class="btn btn-primary" onclick="showTenantForm()">Doorgaan</button>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📥 Import Tenant Configuraties</h2>
+                <button class="modal-close" onclick="closeModal('importModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">JSON Configuratie</label>
+                <textarea id="importData" class="form-input form-textarea" 
+                          placeholder='{"tenants": [...]}'></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="importTenants()">Import</button>
+        </div>
+    </div>
+
+    <script>
+        let currentTenant = null;
+        let tenants = [];
+
+        // Load dashboard data
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/tenants');
+                const data = await response.json();
+                
+                tenants = data.tenants;
+                renderStats(data.stats);
+                renderTenantsList(data.tenants);
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                showError('Failed to load tenant data');
+            }
+        }
+
+        function renderStats(stats) {
+            const statsGrid = document.getElementById('stats-grid');
+            statsGrid.innerHTML = `
+                <div class="stat-item">
+                    <span class="stat-number">${stats.totalTenants}</span>
+                    <div class="stat-label">Totaal Tenants</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${stats.activeTenants}</span>
+                    <div class="stat-label">Actieve Tenants</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${stats.tenantsByFeature.serviceRequests}</span>
+                    <div class="stat-label">Met Service Requests</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${stats.tenantsByFeature.eventInquiries}</span>
+                    <div class="stat-label">Met Event Inquiries</div>
+                </div>
+            `;
+        }
+
+        function renderTenantsList(tenants) {
+            const tenantsList = document.getElementById('tenants-list');
+            
+            if (tenants.length === 0) {
+                tenantsList.innerHTML = '<div class="loading">Geen tenants gevonden</div>';
+                return;
+            }
+
+            tenantsList.innerHTML = tenants.map(tenant => `
+                <div class="tenant-item">
+                    <div class="tenant-header">
+                        <div class="tenant-info">
+                            <div class="tenant-name">${tenant.name}</div>
+                            <div class="tenant-domain">${tenant.domain}</div>
+                            <div class="tenant-status">
+                                <span class="status-dot ${tenant.active ? 'status-active' : 'status-inactive'}"></span>
+                                ${tenant.active ? 'Actief' : 'Inactief'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tenant-features">
+                        ${Object.entries(tenant.features).map(([feature, enabled]) => 
+                            enabled ? `<span class="feature-tag">${feature}</span>` : ''
+                        ).join('')}
+                    </div>
+                    
+                    <div class="tenant-actions">
+                        <button class="btn btn-primary" onclick="editTenant('${tenant.id}')">
+                            ✏️ Bewerken
+                        </button>
+                        <button class="btn btn-success" onclick="previewTenant('${tenant.id}')">
+                            👁️ Preview
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportTenant('${tenant.id}')">
+                            📤 Export
+                        </button>
+                        ${tenant.id !== 'koepel' ? `
+                            <button class="btn btn-danger" onclick="deleteTenant('${tenant.id}')">
+                                🗑️ Verwijderen
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function openCreateTenantModal() {
+            openModal('createTenantModal');
+        }
+
+        function showTenantForm() {
+            closeModal('createTenantModal');
+            document.getElementById('tenant-form').style.display = 'block';
+            document.getElementById('form-title').textContent = '➕ Nieuwe Tenant Toevoegen';
+            document.getElementById('tenant-form-element').reset();
+            currentTenant = null;
+        }
+
+        function cancelForm() {
+            document.getElementById('tenant-form').style.display = 'none';
+            currentTenant = null;
+        }
+
+        // Tenant management functions
+        async function editTenant(tenantId) {
+            const tenant = tenants.find(t => t.id === tenantId);
+            if (!tenant) return;
+
+            currentTenant = tenant;
+            document.getElementById('form-title').textContent = `✏️ ${tenant.name} Bewerken`;
+            
+            // Populate form with tenant data
+            const form = document.getElementById('tenant-form-element');
+            const formData = new FormData();
+            
+            // Fill form fields (simplified - would need full implementation)
+            form.elements.id.value = tenant.id;
+            form.elements.name.value = tenant.name;
+            form.elements.domain.value = tenant.domain;
+            
+            document.getElementById('tenant-form').style.display = 'block';
+        }
+
+        async function deleteTenant(tenantId) {
+            if (!confirm(`Weet je zeker dat je tenant "${tenantId}" wilt verwijderen?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/tenants/${tenantId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showSuccess(`Tenant "${tenantId}" succesvol verwijderd`);
+                    loadDashboard();
+                } else {
+                    throw new Error('Delete failed');
+                }
+            } catch (error) {
+                showError(`Failed to delete tenant: ${error.message}`);
+            }
+        }
+
+        function previewTenant(tenantId) {
+            const previewUrl = `http://localhost:5173?tenant=${tenantId}`;
+            window.open(previewUrl, '_blank');
+        }
+
+        async function exportTenant(tenantId) {
+            try {
+                const response = await fetch(`/api/config/${tenantId}`);
+                const config = await response.json();
+                
+                const dataStr = JSON.stringify(config, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `${tenantId}-config.json`;
+                link.click();
+            } catch (error) {
+                showError(`Export failed: ${error.message}`);
+            }
+        }
+
+        async function exportTenants() {
+            try {
+                const response = await fetch('/api/tenants');
+                const data = await response.json();
+                
+                const dataStr = JSON.stringify(data, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `chatguus-tenants-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+            } catch (error) {
+                showError(`Export failed: ${error.message}`);
+            }
+        }
+
+        function openImportModal() {
+            openModal('importModal');
+        }
+
+        async function importTenants() {
+            const importData = document.getElementById('importData').value;
+            
+            try {
+                const data = JSON.parse(importData);
+                
+                // This would call import API endpoint
+                showSuccess('Import functionaliteit komt binnenkort beschikbaar');
+                closeModal('importModal');
+            } catch (error) {
+                showError(`Invalid JSON: ${error.message}`);
+            }
+        }
+
+        // Form submission
+        document.getElementById('tenant-form-element').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const tenantData = {
+                id: formData.get('id'),
+                name: formData.get('name'),
+                domain: formData.get('domain'),
+                branding: {
+                    primaryColor: formData.get('primaryColor'),
+                    secondaryColor: formData.get('secondaryColor'),
+                    companyName: formData.get('name'),
+                    botName: formData.get('botName'),
+                    welcomeMessage: formData.get('welcomeMessage'),
+                    avatar: formData.get('avatar') || '🤖',
+                    logo: formData.get('logo')
+                },
+                personality: {
+                    name: formData.get('botName'),
+                    traits: ['helpful', 'professional', 'friendly'],
+                    tone: 'professional but friendly',
+                    language: 'nl'
+                },
+                routing: {
+                    general: formData.get('emailGeneral'),
+                    it: formData.get('emailIT'),
+                    events: formData.get('emailEvents'),
+                    support: formData.get('emailSupport')
+                },
+                features: {
+                    serviceRequests: formData.get('featureServiceRequests') === 'on',
+                    eventInquiries: formData.get('featureEventInquiries') === 'on',
+                    faqSystem: formData.get('featureFAQ') === 'on',
+                    emailRouting: formData.get('featureEmailRouting') === 'on'
+                },
+                n8nConfig: {
+                    webhookUrl: formData.get('webhookUrl'),
+                    workflowId: `chatbot-${formData.get('id')}`
+                }
+            };
+
+            try {
+                const method = currentTenant ? 'PUT' : 'POST';
+                const url = currentTenant ? `/api/tenants/${currentTenant.id}` : '/api/tenants';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(tenantData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showSuccess(`Tenant "${tenantData.name}" succesvol ${currentTenant ? 'bijgewerkt' : 'aangemaakt'}`);
+                    cancelForm();
+                    loadDashboard();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+            } catch (error) {
+                showError(`Failed to save tenant: ${error.message}`);
+            }
+        });
+
+        // Utility functions
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            document.body.insertBefore(errorDiv, document.body.firstChild);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            document.body.insertBefore(successDiv, document.body.firstChild);
+            setTimeout(() => successDiv.remove(), 5000);
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboard();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(loadDashboard, 30000);
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

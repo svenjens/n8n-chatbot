@@ -396,11 +396,117 @@ npm run dev         # Vite dev server (port 5173)
 npm run dev:netlify # Netlify Functions local development
 ```
 
-### **3. Website Integration**
+### **3. Framework Integration**
+
+#### **📄 HTML Website**
 ```html
-<!-- Single line integration -->
+<!-- Place before closing </body> tag -->
 <script src="https://chatguuspt.netlify.app/.netlify/functions/widget"></script>
-<script>ChatGuus.init({ theme: 'koepel' });</script>
+<script>
+  ChatGuus.init({
+    theme: 'koepel',
+    tenantId: 'your-company',
+    welcomeMessage: 'Hello! How can I help you?'
+  });
+</script>
+```
+
+#### **⚛️ React Component**
+```jsx
+// ChatGuusWidget.jsx
+import { useEffect } from 'react';
+
+const ChatGuusWidget = () => {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://chatguuspt.netlify.app/.netlify/functions/widget';
+    script.onload = () => {
+      window.ChatGuus?.init({
+        theme: 'koepel',
+        tenantId: 'your-company'
+      });
+    };
+    document.body.appendChild(script);
+    return () => document.body.removeChild(script);
+  }, []);
+
+  return null; // Widget renders itself
+};
+
+export default ChatGuusWidget;
+```
+
+#### **🔺 Next.js Integration**
+```jsx
+// pages/_app.js
+import { useEffect } from 'react';
+
+export default function App({ Component, pageProps }) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://chatguuspt.netlify.app/.netlify/functions/widget';
+      script.onload = () => {
+        window.ChatGuus?.init({
+          theme: 'koepel',
+          tenantId: 'your-company'
+        });
+      };
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  return <Component {...pageProps} />;
+}
+```
+
+#### **💚 Vue.js Component**
+```vue
+<!-- ChatGuusWidget.vue -->
+<template></template>
+
+<script setup>
+import { onMounted, onUnmounted } from 'vue';
+
+let script = null;
+
+onMounted(() => {
+  script = document.createElement('script');
+  script.src = 'https://chatguuspt.netlify.app/.netlify/functions/widget';
+  script.onload = () => {
+    window.ChatGuus?.init({
+      theme: 'koepel',
+      tenantId: 'your-company'
+    });
+  };
+  document.body.appendChild(script);
+});
+
+onUnmounted(() => {
+  if (script) document.body.removeChild(script);
+});
+</script>
+```
+
+#### **⚙️ Configuration Options**
+```javascript
+ChatGuus.init({
+  // 🎨 Styling
+  theme: 'koepel',                    // Or 'custom'
+  primaryColor: '#2563eb',            // Your brand color
+  position: 'bottom-right',           // Or 'bottom-left'
+  
+  // 🏢 Multi-tenant
+  tenantId: 'your-company',          // Unique identifier
+  
+  // 💬 Messages
+  welcomeMessage: 'Hello! How can I help?',
+  
+  // 🔧 Advanced
+  language: 'en',                     // Or 'nl'
+  enableSatisfactionRating: true,     // User feedback
+  enableAnalytics: true              // Usage analytics
+});
 ```
 
 ---

@@ -98,6 +98,38 @@
             margin: 15px 0;
         }
 
+        .tab-button {
+            background-color: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            padding: 10px 20px;
+            margin: 0 5px 10px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .tab-button:hover {
+            background-color: #e2e8f0;
+            transform: translateY(-2px);
+        }
+
+        .tab-button.active {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .implementation-section {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .test-buttons {
             display: flex;
             gap: 15px;
@@ -284,49 +316,248 @@
         </div>
 
         <div class="demo-section">
-            <h2>🔧 Implementatie</h2>
-            <p>Zo implementeer je ChatGuusPT op je eigen website:</p>
+            <h2>🔧 Implementatie Handleiding</h2>
+            <p>Kies je framework en kopieer de code - klaar in 2 minuten! 🚀</p>
             
-            <h3>1. Basis Widget</h3>
-            <div class="code-block">
-&lt;!-- Voeg dit toe aan je HTML --&gt;
-&lt;div id="chatguus-widget"&gt;&lt;/div&gt;
+            <!-- Framework Tabs -->
+            <div style="margin: 20px 0;">
+                <button onclick="showImplementation('html')" class="tab-button active" id="html-tab">📄 HTML</button>
+                <button onclick="showImplementation('react')" class="tab-button" id="react-tab">⚛️ React</button>
+                <button onclick="showImplementation('nextjs')" class="tab-button" id="nextjs-tab">🔺 Next.js</button>
+                <button onclick="showImplementation('vue')" class="tab-button" id="vue-tab">💚 Vue.js</button>
+            </div>
+
+            <!-- HTML Implementation -->
+            <div id="html-implementation" class="implementation-section">
+                <h3>📄 HTML Website</h3>
+                <p><strong>📍 Waar plakken:</strong> Voeg dit toe voor de sluitende <code>&lt;/body&gt;</code> tag</p>
+                
+                <h4>🚀 Basis Setup (1 minuut)</h4>
+                <div class="code-block">
+&lt;!-- Plaats dit voor &lt;/body&gt; --&gt;
 &lt;script src="https://chatguuspt.netlify.app/.netlify/functions/widget"&gt;&lt;/script&gt;
 &lt;script&gt;
   ChatGuus.init({
-    target: '#chatguus-widget',
-    webhookUrl: 'https://chatguuspt.netlify.app/.netlify/functions/chat',
     theme: 'koepel',
-    welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen?'
+    tenantId: 'koepel',
+    welcomeMessage: 'Hallo! Waar kan ik je mee helpen?'
   });
 &lt;/script&gt;
+                </div>
+
+                <h4>🎨 Met Custom Styling</h4>
+                <div class="code-block">
+&lt;script src="https://chatguuspt.netlify.app/.netlify/functions/widget"&gt;&lt;/script&gt;
+&lt;script&gt;
+  ChatGuus.init({
+    theme: 'koepel',
+    tenantId: 'mijn-bedrijf',
+    primaryColor: '#your-brand-color',
+    position: 'bottom-right',
+    welcomeMessage: 'Welkom bij [Bedrijfsnaam]!'
+  });
+&lt;/script&gt;
+                </div>
             </div>
 
-            <h3>2. Aangepaste Styling</h3>
-            <div class="code-block">
-ChatGuus.init({
-  target: '#chatguus-widget',
-  webhookUrl: 'https://chatguuspt.netlify.app/.netlify/functions/chat',
-  primaryColor: '#2563eb',
-  position: 'bottom-right',
-  avatar: '/path/to/guus-avatar.png',
-  theme: {
-    headerBackground: '#2563eb',
-    messageBackground: '#f1f5f9',
-    userMessageBackground: '#2563eb'
+            <!-- React Implementation -->
+            <div id="react-implementation" class="implementation-section" style="display: none;">
+                <h3>⚛️ React Component</h3>
+                <p><strong>📍 Waar plakken:</strong> Maak een nieuwe component of voeg toe aan je App.js</p>
+                
+                <h4>🚀 Basis Component</h4>
+                <div class="code-block">
+// ChatGuusWidget.jsx
+import { useEffect } from 'react';
+
+const ChatGuusWidget = () => {
+  useEffect(() => {
+    // Load ChatGuus script
+    const script = document.createElement('script');
+    script.src = 'https://chatguuspt.netlify.app/.netlify/functions/widget';
+    script.onload = () => {
+      window.ChatGuus?.init({
+        theme: 'koepel',
+        tenantId: 'koepel',
+        welcomeMessage: 'Hallo! Waar kan ik je mee helpen?'
+      });
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  return null; // Widget renders itself
+};
+
+export default ChatGuusWidget;
+                </div>
+
+                <h4>📱 Gebruik in App</h4>
+                <div class="code-block">
+// App.js
+import ChatGuusWidget from './components/ChatGuusWidget';
+
+function App() {
+  return (
+    &lt;div className="App"&gt;
+      {/* Je andere components */}
+      &lt;ChatGuusWidget /&gt;
+    &lt;/div&gt;
+  );
+}
+                </div>
+            </div>
+
+            <!-- Next.js Implementation -->
+            <div id="nextjs-implementation" class="implementation-section" style="display: none;">
+                <h3>🔺 Next.js Integration</h3>
+                <p><strong>📍 Waar plakken:</strong> In je _app.js of als component</p>
+                
+                <h4>🚀 Via _app.js (Globaal)</h4>
+                <div class="code-block">
+// pages/_app.js
+import { useEffect } from 'react';
+
+export default function App({ Component, pageProps }) {
+  useEffect(() => {
+    // Load ChatGuus on client-side only
+    if (typeof window !== 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://chatguuspt.netlify.app/.netlify/functions/widget';
+      script.onload = () => {
+        window.ChatGuus?.init({
+          theme: 'koepel',
+          tenantId: 'koepel',
+          welcomeMessage: 'Hallo! Waar kan ik je mee helpen?'
+        });
+      };
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  return &lt;Component {...pageProps} /&gt;;
+}
+                </div>
+
+                <h4>🎯 Als Component (Specifieke pagina's)</h4>
+                <div class="code-block">
+// components/ChatWidget.js
+import { useEffect } from 'react';
+
+const ChatWidget = () => {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://chatguuspt.netlify.app/.netlify/functions/widget';
+      script.onload = () => {
+        window.ChatGuus?.init({
+          theme: 'koepel',
+          tenantId: 'koepel'
+        });
+      };
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  return null;
+};
+
+export default ChatWidget;
+                </div>
+            </div>
+
+            <!-- Vue.js Implementation -->
+            <div id="vue-implementation" class="implementation-section" style="display: none;">
+                <h3>💚 Vue.js Component</h3>
+                <p><strong>📍 Waar plakken:</strong> Maak een nieuwe component of voeg toe aan App.vue</p>
+                
+                <h4>🚀 Vue 3 Composition API</h4>
+                <div class="code-block">
+&lt;!-- ChatGuusWidget.vue --&gt;
+&lt;template&gt;
+  &lt;!-- Widget renders itself --&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { onMounted, onUnmounted } from 'vue';
+
+let script = null;
+
+onMounted(() => {
+  // Load ChatGuus script
+  script = document.createElement('script');
+  script.src = 'https://chatguuspt.netlify.app/.netlify/functions/widget';
+  script.onload = () => {
+    window.ChatGuus?.init({
+      theme: 'koepel',
+      tenantId: 'koepel',
+      welcomeMessage: 'Hallo! Waar kan ik je mee helpen?'
+    });
+  };
+  document.body.appendChild(script);
+});
+
+onUnmounted(() => {
+  if (script) {
+    document.body.removeChild(script);
   }
 });
+&lt;/script&gt;
+                </div>
+
+                <h4>📱 Gebruik in App</h4>
+                <div class="code-block">
+&lt;!-- App.vue --&gt;
+&lt;template&gt;
+  &lt;div id="app"&gt;
+    &lt;!-- Je andere components --&gt;
+    &lt;ChatGuusWidget /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import ChatGuusWidget from './components/ChatGuusWidget.vue';
+&lt;/script&gt;
+                </div>
             </div>
 
-            <h3>3. N8N Webhook URL</h3>
-            <p>Configureer je N8N webhook URL in de widget initialisatie. De workflow handelt automatisch:</p>
-            <ul style="margin: 10px 0 10px 20px;">
-                <li>Intent detectie en routing</li>
-                <li>OpenAI integratie voor responses</li>
-                <li>Email doorverwijzing naar juiste teams</li>
-                <li>Google Sheets logging</li>
-                <li>Conversation memory management</li>
-            </ul>
+            <!-- Configuration Options -->
+            <div style="margin-top: 30px;">
+                <h3>⚙️ Configuratie Opties</h3>
+                <div class="code-block">
+ChatGuus.init({
+  // 🎨 Basis styling
+  theme: 'koepel',                    // Of 'custom'
+  primaryColor: '#2563eb',            // Je brand kleur
+  position: 'bottom-right',           // Of 'bottom-left'
+  
+  // 🏢 Multi-tenant
+  tenantId: 'jouw-bedrijf',          // Unieke identificatie
+  
+  // 💬 Berichten
+  welcomeMessage: 'Hallo! Hoe kan ik helpen?',
+  
+  // 🔧 Geavanceerd
+  language: 'nl',                     // Of 'en'
+  enableSatisfactionRating: true,     // Tevredenheid meting
+  enableAnalytics: true              // Gebruiksstatistieken
+});
+                </div>
+            </div>
+
+            <!-- Quick Start Tips -->
+            <div style="margin-top: 20px; padding: 15px; background-color: #e0f2fe; border-left: 4px solid #0288d1; border-radius: 4px;">
+                <h4>💡 Quick Start Tips</h4>
+                <ul style="margin: 10px 0 10px 20px;">
+                    <li><strong>Test eerst:</strong> Probeer de widget op deze pagina!</li>
+                    <li><strong>Stap voor stap:</strong> Begin met basis setup, voeg later styling toe</li>
+                    <li><strong>Multi-tenant:</strong> Gebruik unieke tenantId voor je bedrijf</li>
+                    <li><strong>Problemen?</strong> Check browser console voor foutmeldingen</li>
+                </ul>
+            </div>
         </div>
 
         <div class="demo-section">
@@ -515,6 +746,21 @@ ChatGuus.init({
                 document.getElementById('openai-status').textContent = 'OpenAI - Demo Responses';
                 document.querySelectorAll('#status-display .status-indicator')[2].className = 'status-indicator status-offline';
             }
+        }
+
+        // Implementation tabs functionality
+        function showImplementation(framework) {
+            // Hide all implementation sections
+            const sections = document.querySelectorAll('.implementation-section');
+            sections.forEach(section => section.style.display = 'none');
+            
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(button => button.classList.remove('active'));
+            
+            // Show selected section and activate button
+            document.getElementById(framework + '-implementation').style.display = 'block';
+            document.getElementById(framework + '-tab').classList.add('active');
         }
 
         // Run status checks

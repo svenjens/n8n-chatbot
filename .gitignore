@@ -124,3 +124,6 @@ n8n-export-*.json
 # Local development
 .local/
 dev-notes.md
+
+# Local Netlify folder
+.netlify

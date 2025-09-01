@@ -967,10 +967,7 @@ export class SatisfactionRating {
   }
 }
 
-// Export for use in chat widget
-export { SatisfactionRating };
-
-// Utility functions
+// Utility functions  
 export function createSatisfactionRating(options = {}) {
   return new SatisfactionRating(options);
 }

@@ -11,6 +11,11 @@ import {
   ChatSessionsDB, 
   connectToDatabase
 } from '../../src/utils/database.js';
+import { 
+  processTenantRequest,
+  addTenantContext,
+  logTenantEvent
+} from '../../src/utils/tenant-helper.js';
 
 // Initialize services (singleton pattern for serverless)
 let guusPersonality, emailRouter, serviceHandler;
@@ -30,7 +35,7 @@ export const handler = async (event, context) => {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Tenant-ID',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
       }
     };
@@ -48,12 +53,21 @@ export const handler = async (event, context) => {
     };
   }
 
+  // Process tenant request
+  const tenantResult = processTenantRequest(event);
+  if (tenantResult.error) {
+    return tenantResult.response;
+  }
+
+  const { tenantId, tenant, headers } = tenantResult;
+
   try {
     // Initialize services
     initializeServices();
 
     // Parse request body
-    const { message, sessionId, userAgent, url } = JSON.parse(event.body || '{}');
+    const requestData = JSON.parse(event.body || '{}');
+    const { message, sessionId, userAgent, url } = requestData;
 
     // Validate input
     const validation = messageSanitizer.validateMessage(message);

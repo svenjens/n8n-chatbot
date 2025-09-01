@@ -9,6 +9,13 @@ import {
   ChatSessionsDB,
   connectToDatabase
 } from '../../src/utils/database.js';
+import { 
+  processTenantRequest,
+  buildTenantQuery,
+  buildPeriodFilter,
+  addTenantContext,
+  logTenantEvent
+} from '../../src/utils/tenant-helper.js';
 
 export const handler = async (event, context) => {
   // Handle CORS preflight
@@ -17,29 +24,34 @@ export const handler = async (event, context) => {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Tenant-ID',
         'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
       }
     };
   }
 
+  // Process tenant request with required features
+  const tenantResult = processTenantRequest(event, ['satisfactionRatings']);
+  if (tenantResult.error) {
+    return tenantResult.response;
+  }
+
+  const { tenantId, tenant, headers } = tenantResult;
+
   if (event.httpMethod === 'POST') {
-    return await handleRatingSubmission(event);
+    return await handleRatingSubmission(event, tenantId, tenant, headers);
   } else if (event.httpMethod === 'GET') {
-    return await handleRatingAnalytics(event);
+    return await handleRatingAnalytics(event, tenantId, tenant, headers);
   }
 
   return {
     statusCode: 405,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify({ error: 'Method not allowed' })
   };
 };
 
-async function handleRatingSubmission(event) {
+async function handleRatingSubmission(event, tenantId, tenant, headers) {
   try {
     const ratingData = JSON.parse(event.body || '{}');
     
@@ -57,8 +69,14 @@ async function handleRatingSubmission(event) {
       };
     }
 
+    // Add tenant context to rating data
+    const contextualRatingData = addTenantContext(ratingData, tenantId, {
+      tenantName: tenant.name,
+      language: ratingData.language || tenant.defaultLanguage || 'nl'
+    });
+
     // Process and enrich rating data
-    const processedRating = await processRatingData(ratingData);
+    const processedRating = await processRatingData(contextualRatingData);
     
     // Store rating (multiple storage options)
     const results = await Promise.allSettled([
@@ -67,73 +85,73 @@ async function handleRatingSubmission(event) {
       sendToSlackIfLowRating(processedRating)
     ]);
     
-    // Log results
-    console.log('📊 Rating Submitted:', {
+    // Log tenant-specific event
+    logTenantEvent(tenantId, 'Rating Submitted', {
       rating: processedRating.rating,
       sessionId: processedRating.sessionId,
-      tenantId: processedRating.tenantId,
       hasFeedback: !!processedRating.feedback,
-      sentiment: processedRating.analysis.sentiment
+      sentiment: processedRating.analysis?.sentiment
     });
 
     // Send success response
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({
         success: true,
         ratingId: processedRating.id,
         message: getRatingResponseMessage(processedRating.rating),
+        tenantId,
         timestamp: processedRating.timestamp
       })
     };
 
   } catch (error) {
-    console.error('Rating Submission Error:', error);
+    console.error(`[${tenantId}] Rating submission error:`, error);
     
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({
         error: 'Failed to process rating',
+        tenantId,
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       })
     };
   }
 }
 
-async function handleRatingAnalytics(event) {
+async function handleRatingAnalytics(event, tenantId, tenant, headers) {
   try {
-    const { tenant, period = '30d' } = event.queryStringParameters || {};
+    const { period = '30d' } = event.queryStringParameters || {};
     
-    // Generate analytics report
-    const analytics = await generateSatisfactionAnalytics(tenant, period);
+    // Generate tenant-specific analytics report
+    const analytics = await generateSatisfactionAnalytics(tenantId, period);
+    
+    // Log tenant-specific event
+    logTenantEvent(tenantId, 'Analytics Requested', { period });
     
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(analytics)
+      headers,
+      body: JSON.stringify({
+        ...analytics,
+        tenantId,
+        tenantName: tenant.name
+      })
     };
     
   } catch (error) {
-    console.error('Analytics Error:', error);
+    console.error(`[${tenantId}] Rating analytics error:`, error);
     
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ error: 'Analytics generation failed' })
+      headers,
+      body: JSON.stringify({
+        error: 'Failed to generate analytics',
+        tenantId,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      })
     };
   }
 }
@@ -385,27 +403,18 @@ async function sendToSlackIfLowRating(ratingData) {
   }
 }
 
-async function generateSatisfactionAnalytics(tenant, period) {
+async function generateSatisfactionAnalytics(tenantId, period) {
   try {
     await connectToDatabase();
     
-    // Build query filters
-    const query = {};
-    if (tenant) {
-      query.tenantId = tenant;
-    }
-    
-    // Add date filter based on period
-    const now = new Date();
-    const periodDays = period === '7d' ? 7 : period === '30d' ? 30 : 90;
-    const startDate = new Date(now.getTime() - (periodDays * 24 * 60 * 60 * 1000));
-    query.createdAt = { $gte: startDate };
+    // Build tenant-specific query with period filter
+    const query = buildTenantQuery(tenantId, buildPeriodFilter(period));
     
     // Get all ratings for the period
     const ratings = await SatisfactionRatingsDB.find(query);
     
     if (ratings.length === 0) {
-      return generateMockAnalytics(tenant, period);
+      return generateMockAnalytics(tenantId, period);
     }
     
     // Calculate summary statistics
@@ -451,7 +460,7 @@ async function generateSatisfactionAnalytics(tenant, period) {
       
       metadata: {
         period,
-        tenant: tenant || 'all',
+        tenant: tenantId || 'all',
         generatedAt: new Date().toISOString(),
         version: '2.0.0-mongodb',
         dataSource: 'live'
@@ -463,7 +472,7 @@ async function generateSatisfactionAnalytics(tenant, period) {
   } catch (error) {
     console.error('Failed to generate analytics from MongoDB:', error);
     // Fallback to mock data if database fails
-    return generateMockAnalytics(tenant, period);
+    return generateMockAnalytics(tenantId, period);
   }
 }
 
@@ -575,7 +584,7 @@ function getLanguageBreakdown(ratings) {
   return breakdown;
 }
 
-function generateMockAnalytics(tenant, period) {
+function generateMockAnalytics(tenantId, period) {
   return {
     summary: {
       averageRating: 4.2,
@@ -597,7 +606,7 @@ function generateMockAnalytics(tenant, period) {
     },
     metadata: {
       period,
-      tenant: tenant || 'all',
+      tenant: tenantId || 'all',
       generatedAt: new Date().toISOString(),
       version: '2.0.0-mongodb',
       dataSource: 'mock'

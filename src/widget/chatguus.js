@@ -87,13 +87,14 @@ class ChatGuusWidget {
     this.createWidget();
     this.bindEvents();
     
-    // Apply personalized configuration
+    // Apply personalized configuration BEFORE adding welcome message
     await this.applyPersonalization();
     
     // Initialize satisfaction rating for this session
     this.satisfactionRating.initializeSession(this.sessionId, this.options.tenantId);
     this.satisfactionRating.integrateWithChatWidget(this);
     
+    // Add welcome message only once, after personalization
     this.addWelcomeMessage();
     
     // Track widget initialization
@@ -436,7 +437,10 @@ class ChatGuusWidget {
   }
 
   addWelcomeMessage() {
-    this.addMessage(this.options.welcomeMessage, 'bot');
+    // Prevent duplicate welcome messages
+    if (this.messages.length === 0) {
+      this.addMessage(this.options.welcomeMessage, 'bot');
+    }
   }
 
   addMessage(content, sender, options = {}) {
@@ -940,6 +944,13 @@ Vertel me meer over je plannen!`;
 
   // Public API methods
   static init(options) {
+    // Prevent multiple instances - destroy existing widget first
+    const existingWidget = document.querySelector('.chatguus-widget');
+    const existingToggle = document.querySelector('.chatguus-toggle');
+    
+    if (existingWidget) existingWidget.remove();
+    if (existingToggle) existingToggle.remove();
+    
     return new ChatGuusWidget(options);
   }
 }

@@ -17,6 +17,7 @@
 - **🤖 AI-Powered**: OpenAI GPT integration with custom personality modeling
 - **⚡ Serverless-First**: Netlify Functions with Express.js fallback option
 - **📊 Advanced Analytics**: User fingerprinting, satisfaction tracking, and business intelligence
+- **🤖 AI Self-Rating**: Automated quality assessment and missing answer detection
 - **⭐ Customer Experience**: Real-time satisfaction rating with feedback collection
 - **🛍️ E-commerce Ready**: Product search, order tracking, and style recommendations
 - **🔒 Security**: Input sanitization, rate limiting, and secure deployment practices
@@ -62,9 +63,12 @@ ChatGuus.init({
   
   // Advanced features
   enableRating: true,              // Satisfaction rating system
+  enableAISelfRating: true,        // AI quality assessment
+  trackMissingAnswers: true,       // Missing answer detection
   enableFingerprinting: true,      // User analytics
   collectFeedback: true,           // Detailed feedback collection
-  autoPromptRating: true           // Smart rating prompts
+  autoPromptRating: true,          // Smart rating prompts
+  aiConfidenceThreshold: 0.7       // AI confidence threshold
 });
 ```
 
@@ -188,6 +192,74 @@ if (intent.type === 'service_request' && intent.category === 'technical') {
 - **📧 Email Orchestration**: Template-based notifications with context
 - **📊 Data Pipeline**: Structured logging to Google Sheets with analytics
 - **🔄 Fallback Logic**: Graceful degradation when services are unavailable
+
+---
+
+## 🤖 **AI Self-Rating & Analytics System**
+
+### **Automated Quality Assessment**
+```javascript
+// AI evaluates its own responses in real-time
+const aiRating = await aiSelfRating.rateResponse(userQuestion, aiResponse, {
+  sessionId: 'session_123',
+  tenantId: 'koepel',
+  responseTime: 1200
+});
+
+// Returns comprehensive evaluation
+{
+  overall: 4.2,
+  accuracy: 4.5,
+  helpfulness: 4.0,
+  completeness: 3.8,
+  clarity: 4.3,
+  relevance: 4.1,
+  confidence: 0.85,
+  category: 'service_request'
+}
+```
+
+### **Missing Answers Detection**
+- **🎯 Smart Detection**: Automatically identifies poorly answered questions
+- **📊 Priority Classification**: High/Medium/Low priority based on confidence scores
+- **🔄 Frequency Tracking**: Monitors recurring unanswered questions
+- **📈 Trend Analysis**: Historical performance and improvement tracking
+
+### **Professional Analytics Dashboard**
+Built with **Ant Design** for enterprise-grade insights:
+
+#### **Key Metrics**
+- **AI Rating Average**: Real-time quality scores (1-5 scale)
+- **User Satisfaction**: Customer feedback correlation
+- **Missing Answers**: Questions requiring attention
+- **AI Confidence**: Response certainty levels (0-100%)
+
+#### **Advanced Visualizations**
+- **📈 Trend Charts**: 30-day AI performance and satisfaction trends
+- **🍩 Category Breakdown**: Question distribution by type
+- **📊 Confidence Distribution**: High/Medium/Low confidence analysis
+- **⚠️ Priority Alerts**: Critical missing answers requiring immediate action
+
+#### **Export & Integration**
+```javascript
+// Export analytics data
+const analytics = await fetch('/.netlify/functions/ai-analytics?action=export_data');
+// Supports CSV and JSON formats for external analysis
+```
+
+#### **Dashboard Features**
+- **🔍 Advanced Filtering**: By tenant, period, category, priority
+- **📱 Responsive Design**: Works on all devices
+- **⚡ Real-time Updates**: Auto-refresh every 5 minutes
+- **🎨 Professional UI**: Ant Design components with modern styling
+
+### **Business Intelligence**
+- **Quality Control**: Monitor AI performance in real-time
+- **Continuous Improvement**: Identify knowledge gaps automatically  
+- **Performance Tracking**: Measure satisfaction and effectiveness
+- **Data-Driven Decisions**: Use analytics for chatbot optimization
+
+**Live Dashboard**: [Analytics Dashboard](https://chatguuspt.netlify.app/src/admin/analytics-dashboard.html)
 
 ---
 

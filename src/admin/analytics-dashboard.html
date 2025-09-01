@@ -132,6 +132,12 @@
             padding: 24px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             border: 1px solid #f0f0f0;
+            min-height: 280px;
+            max-height: 350px;
+        }
+        
+        .chart-card canvas {
+            max-height: 250px !important;
         }
         
         .chart-title {
@@ -453,13 +459,13 @@
             <!-- Rating Trends Chart -->
             <div class="chart-card">
                 <h3 class="chart-title">AI Rating & Satisfaction Trends</h3>
-                <canvas id="ratingsChart" height="300"></canvas>
+                <canvas id="ratingsChart" height="200"></canvas>
             </div>
             
             <!-- Category Breakdown -->
             <div class="chart-card">
                 <h3 class="chart-title">Vraag Categorieën</h3>
-                <canvas id="categoryChart" height="300"></canvas>
+                <canvas id="categoryChart" height="200"></canvas>
             </div>
         </div>
 

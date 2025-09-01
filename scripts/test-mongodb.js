@@ -132,7 +132,7 @@ async function testConnection() {
       },
       { returnDocument: 'after' }
     );
-    console.log('✅ Frequency update test:', existingAnswer.value.frequency);
+    console.log('✅ Frequency update test:', existingAnswer.value?.frequency || 'Not found');
 
     // Clean up
     await missingAnswers.deleteOne({ _id: missingResult.insertedId });

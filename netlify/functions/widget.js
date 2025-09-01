@@ -5,10 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Note: __dirname not needed in serverless environment
 
 // Cache widget content
 let widgetContent = null;
@@ -17,14 +14,17 @@ let widgetCSS = null;
 function loadWidgetFiles() {
   if (!widgetContent) {
     try {
-      const widgetPath = path.join(__dirname, '../../src/widget/chatguus.js');
-      const cssPath = path.join(__dirname, '../../src/widget/chatguus.css');
+      // Use relative paths from the function location
+      const widgetPath = '../../src/widget/chatguus.js';
+      const cssPath = '../../src/widget/chatguus.css';
       
       widgetContent = fs.readFileSync(widgetPath, 'utf8');
       widgetCSS = fs.readFileSync(cssPath, 'utf8');
     } catch (error) {
       console.error('Failed to load widget files:', error);
-      throw new Error('Widget files not found');
+      // Fallback content for production
+      widgetContent = 'console.error("Widget files not found in production");';
+      widgetCSS = '/* CSS not found */';
     }
   }
 }

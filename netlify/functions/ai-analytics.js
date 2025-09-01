@@ -4,8 +4,6 @@
  * Now with MongoDB Atlas persistent storage
  */
 
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { 
   AIRatingsDB, 
   MissingAnswersDB, 
@@ -14,9 +12,6 @@ import {
   connectToDatabase,
   healthCheck 
 } from '../../src/utils/database.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Cache for dashboard data (5 minute TTL)
 let dashboardCache = null;

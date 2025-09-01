@@ -1,34 +1,143 @@
 /**
  * Netlify Function: Chat Endpoint
- * Serverless chat API voor ChatGuusPT
+ * Standalone serverless chat API voor ChatGuusPT
  */
 
-import { GuusPersonality } from '../../src/server/guus-personality.js';
-import { EmailRouter } from '../../src/server/email-router.js';
-import { ServiceRequestHandler } from '../../src/server/service-request-handler.js';
-import { messageSanitizer } from '../../src/utils/message-sanitizer.js';
-import { 
-  ChatSessionsDB, 
-  connectToDatabase
-} from '../../src/utils/database.js';
-import { 
-  processTenantRequest,
-  addTenantContext,
-  logTenantEvent
-} from '../../src/utils/tenant-helper.js';
+// Standalone OpenAI integration for Netlify
+async function callOpenAI(message, sessionHistory = []) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('OpenAI API key not configured');
+  }
 
-// Initialize services (singleton pattern for serverless)
-let guusPersonality, emailRouter, serviceHandler;
+  const systemPrompt = `Je bent Guus, een vriendelijke en gastvrije assistent van de Koepel.
 
-function initializeServices() {
-  if (!guusPersonality) {
-    guusPersonality = new GuusPersonality();
-    emailRouter = new EmailRouter();
-    serviceHandler = new ServiceRequestHandler();
+PERSOONLIJKHEID:
+- Altijd vriendelijk, open en gastvrij
+- Behulpzaam en proactief in het helpen van bezoekers
+- Professioneel maar toegankelijk in communicatie
+- Enthousiast over de Koepel en haar mogelijkheden
+- Geduldig en begripvol, ook bij complexe vragen
+
+HOOFDTAKEN:
+1. SERVICEVRAGEN AFHANDELEN:
+   - Verzamel volledige informatie volgens servicerequest formulier
+   - Categoriseer verzoeken voor juiste doorverwijzing:
+     * IT/Technisch → support@axs-ict.com
+     * Schoonmaak → ralphcassa@gmail.com  
+     * Algemeen/Overige → welcome@cupolaxs.nl
+     * Bestaande/Geplande events → welcome@cupolaxs.nl
+
+2. NIEUWE EVENEMENTEN:
+   - Vraag door naar specifieke details:
+     * Type evenement en doelgroep
+     * Waarom gekozen voor de Koepel
+     * Aantal verwachte personen
+     * Budget indicatie
+     * Gewenste datum/periode
+     * Speciale wensen of vereisten
+   - Stuur complete informatie door naar irene@cupolaxs.nl
+
+3. FAQ ONDERSTEUNING:
+   - Beantwoord vragen met informatie van cupolaxs.nl
+   - Verwijs naar relevante pagina's en contactpersonen
+   - Bied altijd vervolgstappen aan
+
+COMMUNICATIESTIJL:
+- Gebruik je (informeel) in plaats van u (formeel)
+- Begin gesprekken warm en uitnodigend
+- Stel altijd vervolgvragen om goed te kunnen helpen
+- Geef concrete vervolgstappen
+- Sluit af met aanbod voor verdere hulp
+
+Reageer altijd in het Nederlands en blijf in karakter als de gastvrije Guus.`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...sessionHistory,
+    { role: 'user', content: message }
+  ];
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('OpenAI API Error:', error);
+    throw error;
   }
 }
 
-export const handler = async (event, context) => {
+// Simple intent analysis
+function analyzeIntent(message) {
+  const lowerMessage = message.toLowerCase();
+  
+  // Check for explicit service requests
+  if ((lowerMessage.includes('probleem') || lowerMessage.includes('defect') || lowerMessage.includes('kapot')) && 
+      (lowerMessage.includes('hulp') || lowerMessage.includes('repareren') || lowerMessage.includes('oplossen'))) {
+    return { type: 'service_request', confidence: 0.9, requiresForm: true };
+  } 
+  // Check for event inquiries
+  else if (lowerMessage.includes('evenement') || lowerMessage.includes('event') || 
+           (lowerMessage.includes('organiseren') && lowerMessage.includes('ruimte'))) {
+    return { type: 'event_inquiry', confidence: 0.9, requiresForm: true };
+  }
+  // Check for greetings and general conversation
+  else if (lowerMessage.includes('hallo') || lowerMessage.includes('hi') || lowerMessage.includes('hey') ||
+           lowerMessage.includes('dank') || lowerMessage.includes('bedankt') || lowerMessage.includes('goed')) {
+    return { type: 'general', confidence: 0.8, requiresForm: false };
+  }
+  // Check for IT/technical issues
+  else if (lowerMessage.includes('computer') || lowerMessage.includes('laptop') || lowerMessage.includes('wifi') ||
+           lowerMessage.includes('internet') || lowerMessage.includes('systeem')) {
+    return { type: 'service_request', confidence: 0.7, requiresForm: false };
+  }
+  // Default to general for ambiguous messages
+  else {
+    return { type: 'general', confidence: 0.5, requiresForm: false };
+  }
+}
+
+// Sanitize message content
+function sanitizeMessage(message, options = {}) {
+  if (!message || typeof message !== 'string') {
+    return '';
+  }
+
+  let sanitized = message
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '');
+
+  if (options.maxLength) {
+    sanitized = sanitized.substring(0, options.maxLength);
+  }
+
+  return sanitized.trim();
+}
+
+// Main handler
+exports.handler = async (event, context) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -53,25 +162,13 @@ export const handler = async (event, context) => {
     };
   }
 
-  // Process tenant request
-  const tenantResult = processTenantRequest(event);
-  if (tenantResult.error) {
-    return tenantResult.response;
-  }
-
-  const { tenantId, tenant, headers } = tenantResult;
-
   try {
-    // Initialize services
-    initializeServices();
-
     // Parse request body
     const requestData = JSON.parse(event.body || '{}');
     const { message, sessionId, userAgent, url } = requestData;
 
     // Validate input
-    const validation = messageSanitizer.validateMessage(message);
-    if (!validation.isValid) {
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return {
         statusCode: 400,
         headers: {
@@ -80,7 +177,7 @@ export const handler = async (event, context) => {
         },
         body: JSON.stringify({ 
           error: 'Invalid message', 
-          details: validation.errors 
+          details: ['Message is required and must be a non-empty string'] 
         })
       };
     }
@@ -97,137 +194,37 @@ export const handler = async (event, context) => {
     }
 
     // Sanitize user input
-    const sanitizedMessage = messageSanitizer.sanitizeMessage(message, {
-      stripHTML: true,
-      maxLength: 1000,
-      allowMarkdown: false
+    const sanitizedMessage = sanitizeMessage(message, {
+      maxLength: 1000
     });
 
     // Log interaction
     console.log(`[${new Date().toISOString()}] Chat - Session: ${sessionId}, Message: ${sanitizedMessage}`);
 
     // Analyze message intent
-    const intent = await guusPersonality.analyzeIntent(sanitizedMessage);
+    const intent = analyzeIntent(sanitizedMessage);
     
     let response;
     let action = null;
 
-    // Handle different intent types
-    switch (intent.type) {
-      case 'service_request':
-        response = await guusPersonality.handleServiceRequest(sanitizedMessage, intent);
-        
-        // Only show service request form if confidence is high and it's clearly a service request
-        if (intent.confidence > 0.8 && intent.requiresForm !== false) {
-          action = {
-            type: 'service_request_form',
-            category: intent.category
-          };
-        }
-        
-        // Route email if enough information
-        if (intent.hasCompleteInfo) {
-          try {
-            const routingResult = await emailRouter.routeServiceRequest(intent, {
-              message: sanitizedMessage,
-              sessionId,
-              userAgent,
-              url
-            });
-            if (action) {
-              action.emailSent = true;
-              action.department = routingResult.department;
-            }
-          } catch (emailError) {
-            console.error('Email routing failed:', emailError);
-            // Continue without email routing
-          }
-        }
-        break;
-
-      case 'event_inquiry':
-        response = await guusPersonality.handleEventInquiry(sanitizedMessage, intent);
-        
-        // Only show event inquiry form if confidence is high and it's clearly an event request
-        if (intent.confidence > 0.8 && intent.requiresForm !== false) {
-          action = {
-            type: 'event_inquiry_form'
-          };
-        }
-        
-        // Route to events team if complete
-        if (intent.hasCompleteInfo) {
-          try {
-            await emailRouter.routeEventInquiry(intent, {
-              message: sanitizedMessage,
-              sessionId,
-              userAgent,
-              url
-            });
-            if (action) {
-              action.emailSent = true;
-              action.department = 'Events Team';
-            }
-          } catch (emailError) {
-            console.error('Event email routing failed:', emailError);
-          }
-        }
-        break;
-
-      case 'faq':
-        response = await guusPersonality.handleFAQ(sanitizedMessage, intent);
-        break;
-
-      case 'general':
-      default:
-        response = await guusPersonality.handleGeneral(sanitizedMessage, intent);
-        break;
-    }
-
-    // Sanitize bot response (allow some formatting)
-    const sanitizedResponse = messageSanitizer.sanitizeMessage(response, {
-      stripHTML: false,
-      maxLength: 2000,
-      allowMarkdown: true
-    });
-
-    // Log to Google Sheets if configured
-    if (process.env.GOOGLE_SHEETS_ID) {
-      try {
-        await serviceHandler.logInteraction({
-          sessionId,
-          message: sanitizedMessage,
-          response: sanitizedResponse,
-          intent: intent.type,
-          timestamp: new Date().toISOString(),
-          userAgent,
-          url
-        });
-      } catch (sheetsError) {
-        console.error('Google Sheets logging failed:', sheetsError);
-        // Continue without logging
-      }
-    }
-
-    // Log chat session to MongoDB
+    // Get AI response
     try {
-      await logChatSession({
-        sessionId,
-        tenantId: requestData.tenantId || 'default',
-        userMessage: sanitizedMessage,
-        aiResponse: sanitizedResponse,
-        intent: intent?.type,
-        action,
-        metadata: {
-          userAgent,
-          url,
-          language: requestData.language || 'nl',
-          timestamp: new Date().toISOString()
-        }
-      });
-    } catch (logError) {
-      console.error('Chat session logging failed:', logError);
-      // Continue without logging
+      response = await callOpenAI(sanitizedMessage);
+    } catch (aiError) {
+      console.error('AI Error:', aiError);
+      response = 'Hallo! Ik ben Guus van de Koepel. Helaas kan ik je vraag nu niet direct beantwoorden, maar je kunt altijd contact opnemen via welcome@cupolaxs.nl voor persoonlijke hulp.';
+    }
+
+    // Handle special actions based on intent
+    if (intent.type === 'service_request' && intent.confidence > 0.8 && intent.requiresForm) {
+      action = {
+        type: 'service_request_form',
+        category: 'general'
+      };
+    } else if (intent.type === 'event_inquiry' && intent.confidence > 0.8 && intent.requiresForm) {
+      action = {
+        type: 'event_inquiry_form'
+      };
     }
 
     // Return successful response
@@ -239,7 +236,7 @@ export const handler = async (event, context) => {
         'Cache-Control': 'no-cache'
       },
       body: JSON.stringify({
-        message: sanitizedResponse,
+        message: response,
         action,
         sessionId,
         timestamp: new Date().toISOString(),
@@ -268,69 +265,3 @@ export const handler = async (event, context) => {
     };
   }
 };
-
-// Helper function to log chat sessions to MongoDB
-async function logChatSession(sessionData) {
-  try {
-    await connectToDatabase();
-    
-    const { sessionId, tenantId, userMessage, aiResponse, intent, action, metadata } = sessionData;
-    
-    // Try to find existing session
-    const existingSession = await ChatSessionsDB.findOne({ sessionId });
-    
-    const messageEntry = {
-      content: userMessage,
-      sender: 'user',
-      timestamp: new Date()
-    };
-    
-    const responseEntry = {
-      content: aiResponse,
-      sender: 'ai',
-      intent,
-      action,
-      timestamp: new Date()
-    };
-    
-    if (existingSession) {
-      // Update existing session with new messages
-      await ChatSessionsDB.updateOne(
-        { sessionId },
-        {
-          $push: { 
-            messages: { $each: [messageEntry, responseEntry] }
-          },
-          $set: { 
-            updatedAt: new Date(),
-            lastActivity: new Date()
-          }
-        }
-      );
-    } else {
-      // Create new session
-      const newSession = {
-        sessionId,
-        tenantId,
-        messages: [messageEntry, responseEntry],
-        metadata: {
-          userAgent: metadata.userAgent,
-          url: metadata.url,
-          language: metadata.language,
-          startTime: new Date()
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastActivity: new Date()
-      };
-      
-      await ChatSessionsDB.create(newSession);
-    }
-    
-    console.log(`📝 Chat session logged: ${sessionId}`);
-    
-  } catch (error) {
-    console.error('Failed to log chat session:', error);
-    throw error;
-  }
-}

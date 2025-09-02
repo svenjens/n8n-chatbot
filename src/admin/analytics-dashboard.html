@@ -667,6 +667,11 @@
             // Show indicator if we're using real data vs mock data
             const hasRealAIData = dashboardData.aiRatings && dashboardData.aiRatings.length > 0;
             const hasRealAnalytics = dashboardData.analytics && dashboardData.analytics.summary;
+            const hasSatisfactionData = dashboardData.analytics?.summary?.totalSatisfactionRatings > 0;
+            const hasSessions = dashboardData.analytics?.summary?.totalSessions > 0;
+            
+            // Consider it "live data" if we have any real analytics data
+            const hasAnyRealData = hasRealAnalytics && (hasRealAIData || hasSatisfactionData || hasSessions);
             
             let indicator = document.getElementById('dataSourceIndicator');
             if (!indicator) {
@@ -693,7 +698,7 @@
                 indicator.style.background = '#fffbe6';
                 indicator.style.color = '#faad14';
                 indicator.style.border = '1px solid #ffe58f';
-            } else if (hasRealAIData && hasRealAnalytics) {
+            } else if (hasAnyRealData) {
                 indicator.innerHTML = '🟢 Live Data';
                 indicator.style.background = '#f6ffed';
                 indicator.style.color = '#52c41a';

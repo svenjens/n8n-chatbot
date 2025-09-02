@@ -176,6 +176,18 @@ const SatisfactionRatingsDB = {
       avgRating: parseFloat((data.avgRating || 0).toFixed(2)),
       satisfactionRate: data.totalRatings > 0 ? Math.round((data.satisfiedCount / data.totalRatings) * 100) : 0
     };
+  },
+
+  async find(query = {}, options = {}) {
+    const { db } = await connectToDatabase();
+    let cursor = db.collection('satisfaction_ratings').find(query);
+    
+    if (options.fields) cursor = cursor.project(options.fields);
+    if (options.sort) cursor = cursor.sort(options.sort);
+    if (options.limit) cursor = cursor.limit(options.limit);
+    if (options.skip) cursor = cursor.skip(options.skip);
+    
+    return await cursor.toArray();
   }
 };
 
@@ -645,6 +657,15 @@ async function calculateAnalyticsFromDB(filters = {}) {
 
     // Get satisfaction analytics
     const satisfactionAnalytics = await SatisfactionRatingsDB.getAnalytics(query);
+    
+    // Calculate unique sessions from both AI ratings and satisfaction ratings
+    const aiSessions = await AIRatingsDB.find(query, { fields: { sessionId: 1 } });
+    const satisfactionSessions = await SatisfactionRatingsDB.find(query, { fields: { sessionId: 1 } });
+    
+    const uniqueSessions = new Set([
+      ...aiSessions.map(r => r.sessionId).filter(Boolean),
+      ...satisfactionSessions.map(r => r.sessionId).filter(Boolean)
+    ]);
 
     return {
       summary: {
@@ -652,7 +673,9 @@ async function calculateAnalyticsFromDB(filters = {}) {
         averageAIRating: parseFloat((aiAnalytics.avgOverall || 0).toFixed(2)),
         averageConfidence: parseFloat(((aiAnalytics.avgConfidence || 0) * 100).toFixed(1)),
         userSatisfactionRate: satisfactionAnalytics.satisfactionRate || 0,
-        missingAnswersCount: missingAnswersAnalytics.total
+        missingAnswersCount: missingAnswersAnalytics.total,
+        totalSessions: uniqueSessions.size,
+        totalSatisfactionRatings: satisfactionAnalytics.totalRatings
       },
       aiRatings: {
         total: aiAnalytics.totalRatings,

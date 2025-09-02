@@ -459,6 +459,20 @@
                     +12% deze week
                 </div>
             </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Totaal Sessies</span>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #13c2c2, #36cfc9);">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="totalSessions">0</div>
+                <div class="stat-change neutral">
+                    <i class="fas fa-info-circle"></i>
+                    Unieke gesprekken
+                </div>
+            </div>
         </div>
 
         <!-- Charts Grid -->
@@ -715,6 +729,10 @@
             const aiConfidence = analytics.summary?.averageConfidence || 
                                 analytics.averageConfidence || 0;
             document.getElementById('aiConfidence').textContent = aiConfidence + '%';
+            
+            // Update Total Sessions - use real session data
+            const totalSessions = analytics.summary?.totalSessions || 0;
+            document.getElementById('totalSessions').textContent = totalSessions;
         }
         
         function updateCharts() {

@@ -176,6 +176,14 @@ exports.handler = async (event, context) => {
     // Parse request body
     const requestData = JSON.parse(event.body || '{}');
     const { message, sessionId, userAgent, url } = requestData;
+    
+    // Extract tenant information from headers
+    const tenantId = event.headers['x-tenant-id'] || event.headers['X-Tenant-ID'] || 'default';
+    
+    // Log warning if no explicit tenant provided
+    if (tenantId === 'default') {
+      console.warn(`[${sessionId}] No tenant header provided, using 'default'. Consider adding X-Tenant-ID header.`);
+    }
 
     // Validate input
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -258,6 +266,7 @@ exports.handler = async (event, context) => {
         message: response,
         action,
         sessionId,
+        tenantId,
         timestamp: new Date().toISOString(),
         service: 'ChatGuusPT-Netlify'
       })

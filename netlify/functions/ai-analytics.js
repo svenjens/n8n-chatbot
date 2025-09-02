@@ -273,11 +273,17 @@ const handler = async (event, context) => {
  */
 async function handleStoreAIRating(data, headers) {
   try {
+    // Validate tenant information
+    const tenantId = data.tenantId || 'default';
+    if (tenantId === 'default') {
+      console.warn(`[${data.sessionId}] AI Rating stored with default tenant. Consider providing explicit tenantId.`);
+    }
+
     const rating = {
       id: data.id || generateId('ai_rating'),
       timestamp: data.timestamp || new Date().toISOString(),
       sessionId: data.sessionId,
-      tenantId: data.tenantId,
+      tenantId: tenantId,
       userQuestion: data.userQuestion,
       aiResponse: data.aiResponse,
       rating: data.rating,

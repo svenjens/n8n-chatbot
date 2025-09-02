@@ -96,33 +96,152 @@ Reageer altijd in het Nederlands en blijf in karakter als de gastvrije Guus.`;
   }
 }
 
-// Simple intent analysis
+// Enhanced intent analysis with comprehensive context understanding
 function analyzeIntent(message) {
   const lowerMessage = message.toLowerCase();
+  
+  // Check for urgency indicators first (affects all other categories)
+  const isUrgent = lowerMessage.includes('dringend') || lowerMessage.includes('spoed') || 
+                   lowerMessage.includes('urgent') || lowerMessage.includes('zo snel mogelijk') ||
+                   lowerMessage.includes('direct') || lowerMessage.includes('asap');
+  
+  // Check for complaints vs compliments
+  const isComplaint = lowerMessage.includes('klacht') || lowerMessage.includes('ontevreden') || 
+                      lowerMessage.includes('slecht') || lowerMessage.includes('problematisch') ||
+                      lowerMessage.includes('irritant') || lowerMessage.includes('teleurgesteld');
+  
+  const isCompliment = lowerMessage.includes('compliment') || lowerMessage.includes('tevreden') || 
+                       lowerMessage.includes('goed') || lowerMessage.includes('uitstekend') ||
+                       lowerMessage.includes('perfect') || lowerMessage.includes('geweldig');
+  
+  // Handle complaints with high priority
+  if (isComplaint) {
+    return { 
+      type: 'complaint', 
+      confidence: 0.9, 
+      requiresForm: true, 
+      urgent: isUrgent,
+      priority: isUrgent ? 'high' : 'medium'
+    };
+  }
+  
+  // Handle compliments
+  if (isCompliment) {
+    return { 
+      type: 'compliment', 
+      confidence: 0.8, 
+      requiresForm: false,
+      priority: 'low'
+    };
+  }
+  
+  // Check for pricing inquiries
+  if (lowerMessage.includes('prijs') || lowerMessage.includes('kost') || lowerMessage.includes('tarief') ||
+      lowerMessage.includes('budget') || lowerMessage.includes('kosten') || lowerMessage.includes('betalen')) {
+    return { 
+      type: 'pricing_inquiry', 
+      confidence: 0.8, 
+      requiresForm: false,
+      priority: 'medium'
+    };
+  }
+  
+  // Check for accessibility needs
+  if (lowerMessage.includes('rolstoel') || lowerMessage.includes('toegankelijk') || 
+      lowerMessage.includes('mindervalide') || lowerMessage.includes('lift') ||
+      lowerMessage.includes('gehandicapt') || lowerMessage.includes('mobility')) {
+    return { 
+      type: 'accessibility_inquiry', 
+      confidence: 0.9, 
+      requiresForm: false,
+      priority: 'high'
+    };
+  }
+  
+  // Check for event cancellation/modification (high priority)
+  if (lowerMessage.includes('annuleren') || lowerMessage.includes('annulering') || 
+      lowerMessage.includes('afzeggen') || lowerMessage.includes('cancel') ||
+      lowerMessage.includes('wijzigen') || lowerMessage.includes('verplaatsen') || 
+      lowerMessage.includes('verzetten')) {
+    return { 
+      type: 'event_modification', 
+      confidence: 0.9, 
+      requiresForm: false,
+      urgent: isUrgent,
+      priority: isUrgent ? 'high' : 'medium'
+    };
+  }
   
   // Check for explicit service requests
   if ((lowerMessage.includes('probleem') || lowerMessage.includes('defect') || lowerMessage.includes('kapot')) && 
       (lowerMessage.includes('hulp') || lowerMessage.includes('repareren') || lowerMessage.includes('oplossen'))) {
-    return { type: 'service_request', confidence: 0.9, requiresForm: true };
+    return { 
+      type: 'service_request', 
+      confidence: 0.9, 
+      requiresForm: true,
+      urgent: isUrgent,
+      priority: isUrgent ? 'high' : 'medium'
+    };
   } 
-  // Check for event inquiries
-  else if (lowerMessage.includes('evenement') || lowerMessage.includes('event') || 
-           (lowerMessage.includes('organiseren') && lowerMessage.includes('ruimte'))) {
-    return { type: 'event_inquiry', confidence: 0.9, requiresForm: true };
+  
+  // Check for NEW event planning (only if not cancellation/modification)
+  else if ((lowerMessage.includes('evenement') || lowerMessage.includes('event')) && 
+           (lowerMessage.includes('organiseren') || lowerMessage.includes('plannen') || 
+            lowerMessage.includes('boeken') || lowerMessage.includes('reserveren') ||
+            lowerMessage.includes('huren') || lowerMessage.includes('nieuwe'))) {
+    return { 
+      type: 'event_inquiry', 
+      confidence: 0.9, 
+      requiresForm: true,
+      priority: 'medium'
+    };
   }
+  
+  // Check for existing event questions (not planning)
+  else if ((lowerMessage.includes('evenement') || lowerMessage.includes('event')) && 
+           (lowerMessage.includes('wanneer') || lowerMessage.includes('tijd') || 
+            lowerMessage.includes('locatie') || lowerMessage.includes('info') ||
+            lowerMessage.includes('details') || lowerMessage.includes('programma') ||
+            lowerMessage.includes('mijn') || lowerMessage.includes('bestaande'))) {
+    return { 
+      type: 'event_info', 
+      confidence: 0.8, 
+      requiresForm: false,
+      priority: 'low'
+    };
+  }
+  
   // Check for greetings and general conversation
   else if (lowerMessage.includes('hallo') || lowerMessage.includes('hi') || lowerMessage.includes('hey') ||
-           lowerMessage.includes('dank') || lowerMessage.includes('bedankt') || lowerMessage.includes('goed')) {
-    return { type: 'general', confidence: 0.8, requiresForm: false };
+           lowerMessage.includes('dank') || lowerMessage.includes('bedankt')) {
+    return { 
+      type: 'general', 
+      confidence: 0.8, 
+      requiresForm: false,
+      priority: 'low'
+    };
   }
+  
   // Check for IT/technical issues
   else if (lowerMessage.includes('computer') || lowerMessage.includes('laptop') || lowerMessage.includes('wifi') ||
            lowerMessage.includes('internet') || lowerMessage.includes('systeem')) {
-    return { type: 'service_request', confidence: 0.7, requiresForm: false };
+    return { 
+      type: 'service_request', 
+      confidence: 0.7, 
+      requiresForm: false,
+      urgent: isUrgent,
+      priority: isUrgent ? 'high' : 'medium'
+    };
   }
+  
   // Default to general for ambiguous messages
   else {
-    return { type: 'general', confidence: 0.5, requiresForm: false };
+    return { 
+      type: 'general', 
+      confidence: 0.5, 
+      requiresForm: false,
+      priority: 'low'
+    };
   }
 }
 
@@ -243,14 +362,53 @@ exports.handler = async (event, context) => {
     }
 
     // Handle special actions based on intent
-    if (intent.type === 'service_request' && intent.confidence > 0.8 && intent.requiresForm) {
+    if (intent.type === 'complaint' && intent.confidence > 0.8) {
+      action = {
+        type: 'complaint_form',
+        category: 'complaint',
+        priority: intent.priority,
+        urgent: intent.urgent
+      };
+    } else if (intent.type === 'compliment' && intent.confidence > 0.7) {
+      action = {
+        type: 'compliment_acknowledgment',
+        category: 'positive_feedback'
+      };
+    } else if (intent.type === 'pricing_inquiry' && intent.confidence > 0.7) {
+      action = {
+        type: 'pricing_info',
+        category: 'information'
+      };
+    } else if (intent.type === 'accessibility_inquiry' && intent.confidence > 0.8) {
+      action = {
+        type: 'accessibility_info',
+        category: 'accessibility',
+        priority: 'high'
+      };
+    } else if (intent.type === 'service_request' && intent.confidence > 0.8 && intent.requiresForm) {
       action = {
         type: 'service_request_form',
-        category: 'general'
+        category: 'general',
+        priority: intent.priority,
+        urgent: intent.urgent
       };
     } else if (intent.type === 'event_inquiry' && intent.confidence > 0.8 && intent.requiresForm) {
       action = {
-        type: 'event_inquiry_form'
+        type: 'event_inquiry_form',
+        priority: intent.priority
+      };
+    } else if (intent.type === 'event_modification' && intent.confidence > 0.8) {
+      action = {
+        type: 'event_modification',
+        category: 'existing_event',
+        priority: intent.priority,
+        urgent: intent.urgent
+      };
+    } else if (intent.type === 'event_info' && intent.confidence > 0.7) {
+      action = {
+        type: 'event_info_request',
+        category: 'information',
+        priority: intent.priority
       };
     }
 

@@ -301,6 +301,20 @@ const handler = async (event, context) => {
           this.sessionId = this.generateSessionId();
           this.messages = [];
           this.isTyping = false;
+          this.sessionStart = Date.now();
+          
+          // Initialize satisfaction rating if available
+          if (typeof window !== 'undefined' && window.SatisfactionRating) {
+            this.satisfactionRating = new window.SatisfactionRating({
+              tenantId: this.options.tenantId
+            });
+          }
+          
+          // Initialize AI self-rating system
+          this.aiSelfRating = {
+            enabled: options.enableAISelfRating !== false,
+            confidenceThreshold: options.aiConfidenceThreshold || 0.7
+          };
           
           this.init();
         }
@@ -380,11 +394,14 @@ const handler = async (event, context) => {
         }
 
         toggle() {
-          this.isOpen = !this.isOpen;
-          this.widget.classList.toggle('open', this.isOpen);
-          this.toggleButton.classList.toggle('hidden', this.isOpen);
-          
           if (this.isOpen) {
+            // Closing - use same logic as close button
+            this.close();
+          } else {
+            // Opening
+            this.isOpen = true;
+            this.widget.classList.add('open');
+            this.toggleButton.classList.add('hidden');
             this.inputField.focus();
           }
         }
@@ -397,9 +414,46 @@ const handler = async (event, context) => {
         }
 
         close() {
+          // Check if we should show satisfaction rating before closing
+          if (this.shouldShowRatingOnClose()) {
+            this.closeWithRating();
+            return;
+          }
+          
+          this.performClose();
+        }
+
+        shouldShowRatingOnClose() {
+          // Don't show rating if already rated or if there's no conversation
+          if (this.satisfactionRating && (this.satisfactionRating.hasRated || this.messages.length <= 1)) {
+            return false;
+          }
+          
+          // Show rating if user has had a meaningful conversation
+          const userMessages = this.messages.filter(m => m.sender === 'user').length;
+          const sessionDuration = this.getSessionDuration();
+          
+          // Show rating if user sent at least 2 messages and session lasted more than 30 seconds
+          return userMessages >= 2 && sessionDuration > 30000;
+        }
+
+        closeWithRating() {
+          // Show satisfaction rating before closing
+          if (this.satisfactionRating) {
+            this.satisfactionRating.promptForRatingOnClose(this);
+          } else {
+            this.performClose();
+          }
+        }
+
+        performClose() {
           this.isOpen = false;
           this.widget.classList.remove('open');
           this.toggleButton.classList.remove('hidden');
+        }
+
+        getSessionDuration() {
+          return this.sessionStart ? Date.now() - this.sessionStart : 0;
         }
 
         addWelcomeMessage() {
@@ -478,6 +532,11 @@ const handler = async (event, context) => {
             this.hideTyping();
             this.addMessage(response.message, 'bot');
             
+            // Generate AI self-rating for this response
+            if (this.aiSelfRating.enabled) {
+              this.generateAIRating(message, response.message);
+            }
+            
             if (response.action) {
               this.handleSpecialAction(response.action);
             }
@@ -507,7 +566,10 @@ const handler = async (event, context) => {
 
           const response = await fetch(this.options.webhookUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Tenant-ID': this.options.tenantId || 'koepel'
+            },
             body: JSON.stringify(payload)
           });
 
@@ -520,11 +582,32 @@ const handler = async (event, context) => {
 
         handleSpecialAction(action) {
           switch (action.type) {
+            case 'complaint_form':
+              const urgentText = action.urgent ? ' **URGENT** 🚨' : '';
+              this.addMessage(\`**Klacht Afhandeling**\${urgentText}\\n\\nIk begrijp dat je ontevreden bent. Dit nemen we zeer serieus. Ik ga je direct doorverbinden met ons management team. 📋\`, 'bot');
+              break;
+            case 'compliment_acknowledgment':
+              this.addMessage('**Dank je wel!** 🙏\\n\\nWat fijn om te horen dat je tevreden bent! Ik deel dit graag met het team. Heb je nog andere vragen?', 'bot');
+              break;
+            case 'pricing_info':
+              this.addMessage('**Prijsinformatie** 💰\\n\\nIk help je graag met prijsinformatie! Voor de meest actuele tarieven verwijs ik je naar onze website of ik kan je doorverbinden met ons commerciële team.', 'bot');
+              break;
+            case 'accessibility_info':
+              this.addMessage('**Toegankelijkheid** ♿\\n\\nToegankelijkheid is belangrijk voor ons! Ik zorg ervoor dat je alle informatie krijgt over onze voorzieningen. Laat me je doorverbinden met iemand die je precies kan helpen.', 'bot');
+              break;
             case 'service_request_form':
-              this.addMessage('**Serviceverzoek Formulier**\\n\\nIk help je graag! Kun je me meer details geven over je verzoek? 🛠️', 'bot');
+              const serviceUrgentText = action.urgent ? ' **SPOED** ⚡' : '';
+              this.addMessage(\`**Serviceverzoek**\${serviceUrgentText}\\n\\nIk help je graag! Kun je me meer details geven over je verzoek? 🛠️\`, 'bot');
               break;
             case 'event_inquiry_form':
               this.addMessage('**Event Uitvraag** 🎉\\n\\nLeuk! Vertel me meer over je evenement plannen.', 'bot');
+              break;
+            case 'event_modification':
+              const eventUrgentText = action.urgent ? ' **URGENT** ⚡' : '';
+              this.addMessage(\`**Evenement Wijziging**\${eventUrgentText} ✏️\\n\\nIk begrijp dat je een evenement wilt wijzigen of annuleren. Ik zet je direct door naar het juiste team.\`, 'bot');
+              break;
+            case 'event_info_request':
+              this.addMessage('**Evenement Informatie** ℹ️\\n\\nIk help je graag met informatie over bestaande evenementen!', 'bot');
               break;
           }
         }
@@ -535,6 +618,136 @@ const handler = async (event, context) => {
 
         markIssueResolved() {
           console.log('Issue marked as resolved');
+        }
+
+        async generateAIRating(userQuestion, aiResponse) {
+          try {
+            // Simple AI rating logic (in production, this would be more sophisticated)
+            const rating = this.calculateSimpleRating(userQuestion, aiResponse);
+            
+            const ratingData = {
+              id: 'rating_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+              timestamp: new Date().toISOString(),
+              sessionId: this.sessionId,
+              tenantId: this.options.tenantId,
+              userQuestion: userQuestion,
+              aiResponse: aiResponse,
+              rating: rating,
+              context: {
+                messageCount: this.messages.length,
+                sessionDuration: this.getSessionDuration()
+              }
+            };
+
+            // Store the AI rating
+            await this.storeAIRating(ratingData);
+            
+          } catch (error) {
+            console.warn('Failed to generate AI rating:', error);
+          }
+        }
+
+        calculateSimpleRating(question, response) {
+          // Simple heuristic-based rating (placeholder for actual AI evaluation)
+          let overall = 4.0;
+          let confidence = 0.8;
+          
+          // Adjust based on response characteristics
+          if (response.length < 50) {
+            overall -= 0.5;
+            confidence -= 0.1;
+          }
+          
+          if (response.includes('Sorry') || response.includes('sorry')) {
+            overall -= 0.3;
+            confidence -= 0.2;
+          }
+          
+          if (response.includes('welcome@cupolaxs.nl')) {
+            overall -= 0.2; // Indicates fallback response
+            confidence -= 0.3;
+          }
+          
+          return {
+            overall: Math.max(1, Math.min(5, overall)),
+            accuracy: overall,
+            helpfulness: overall,
+            completeness: overall - 0.1,
+            clarity: overall + 0.1,
+            relevance: overall,
+            confidence: Math.max(0.1, Math.min(1.0, confidence)),
+            category: this.categorizeQuestion(question)
+          };
+        }
+
+        categorizeQuestion(question) {
+          const lowerQuestion = question.toLowerCase();
+          
+          // Check for complaints and compliments first
+          if (lowerQuestion.includes('klacht') || lowerQuestion.includes('ontevreden') || 
+              lowerQuestion.includes('slecht') || lowerQuestion.includes('problematisch')) {
+            return 'complaint';
+          } else if (lowerQuestion.includes('compliment') || lowerQuestion.includes('tevreden') || 
+                     lowerQuestion.includes('uitstekend') || lowerQuestion.includes('perfect')) {
+            return 'compliment';
+          }
+          
+          // Check for pricing inquiries
+          else if (lowerQuestion.includes('prijs') || lowerQuestion.includes('kost') || 
+                   lowerQuestion.includes('tarief') || lowerQuestion.includes('budget')) {
+            return 'pricing';
+          }
+          
+          // Check for accessibility
+          else if (lowerQuestion.includes('rolstoel') || lowerQuestion.includes('toegankelijk') || 
+                   lowerQuestion.includes('mindervalide') || lowerQuestion.includes('lift')) {
+            return 'accessibility';
+          }
+          
+          // Event-related categories with more specificity
+          else if (lowerQuestion.includes('annuleren') || lowerQuestion.includes('afzeggen') || 
+                   lowerQuestion.includes('wijzigen') || lowerQuestion.includes('verplaatsen')) {
+            return 'event_modification';
+          } else if (lowerQuestion.includes('evenement') || lowerQuestion.includes('event')) {
+            if (lowerQuestion.includes('organiseren') || lowerQuestion.includes('plannen') || 
+                lowerQuestion.includes('boeken') || lowerQuestion.includes('nieuwe')) {
+              return 'event_planning';
+            } else {
+              return 'event_info';
+            }
+          } else if (lowerQuestion.includes('probleem') || lowerQuestion.includes('defect')) {
+            return 'technical_support';
+          } else if (lowerQuestion.includes('ruimte') || lowerQuestion.includes('huren')) {
+            return 'facilities';
+          } else if (lowerQuestion.includes('contact') || lowerQuestion.includes('email')) {
+            return 'contact_info';
+          } else {
+            return 'general';
+          }
+        }
+
+        async storeAIRating(rating) {
+          try {
+            const response = await fetch('/.netlify/functions/ai-analytics?action=store_ai_rating', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Tenant-ID': this.options.tenantId || 'koepel'
+              },
+              body: JSON.stringify(rating)
+            });
+
+            if (!response.ok) {
+              throw new Error(\`Failed to store AI rating: \${response.status}\`);
+            }
+
+            const result = await response.json();
+            console.log('AI rating stored:', result.ratingId);
+            
+          } catch (error) {
+            console.warn('Failed to store AI rating:', error);
+            // Don't throw - this shouldn't break the chat flow
+          }
         }
 
         static init(options) {
@@ -559,7 +772,10 @@ const handler = async (event, context) => {
             ...options,
             webhookUrl: window.CHATGUUS_CONFIG.apiEndpoint,
             tenantId: window.CHATGUUS_CONFIG.tenantId,
-            fallbackMode: true
+            fallbackMode: true,
+            // Ensure AI rating is enabled by default
+            enableAISelfRating: options.enableAISelfRating !== false,
+            aiConfidenceThreshold: options.aiConfidenceThreshold || 0.7
           };
           return originalInit(netlifyOptions);
         };

@@ -22,7 +22,9 @@
     "deploy": "netlify deploy --prod",
     "deploy:preview": "netlify deploy",
     "lighthouse": "npx lighthouse-ci autorun",
-    "audit": "npm audit --audit-level high"
+    "audit": "npm audit --audit-level high",
+    "validate:deployment": "node scripts/validate-deployment.js",
+    "prepare:deploy": "npm run validate:deployment && git add . && git status"
   },
   "keywords": [
     "chatbot",

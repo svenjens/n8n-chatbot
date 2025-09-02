@@ -838,6 +838,379 @@ export class SatisfactionRating {
     this.bindRatingEventsToWidget(messageElement, chatWidget);
   }
 
+  promptForRatingOnClose(chatWidget) {
+    if (this.ratingPromptShown || this.hasRated) return;
+    
+    this.ratingPromptShown = true;
+    
+    // Create a special close-rating overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'chatguus-rating-overlay';
+    overlay.innerHTML = `
+      <div class="rating-close-dialog">
+        <div class="rating-header">
+          <h3>Voordat je gaat... 👋</h3>
+          <p>Hoe vond je je ervaring met Guus?</p>
+        </div>
+        
+        <div class="rating-stars">
+          ${Array.from({length: this.options.ratingScale}, (_, i) => 
+            `<button class="rating-star" data-rating="${i + 1}" title="${this.lang.labels[i + 1]}">
+              <span class="star-icon">⭐</span>
+              <span class="star-label">${this.lang.labels[i + 1]}</span>
+            </button>`
+          ).join('')}
+        </div>
+        
+        <div class="rating-actions">
+          <button class="skip-rating">Overslaan</button>
+          <button class="close-anyway">Sluiten zonder rating</button>
+        </div>
+        
+        <div class="feedback-section" style="display: none;">
+          <textarea 
+            class="feedback-text"
+            placeholder="${this.lang.placeholder}"
+            maxlength="300"
+            rows="2"
+          ></textarea>
+          <div class="feedback-buttons">
+            <button class="submit-and-close">Verstuur & Sluit</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Add overlay to widget
+    chatWidget.widget.appendChild(overlay);
+    
+    // Bind events for close rating
+    this.bindCloseRatingEvents(overlay, chatWidget);
+    
+    // Add styles if not already added
+    if (!document.getElementById('close-rating-styles')) {
+      this.addCloseRatingStyles();
+    }
+  }
+
+  bindCloseRatingEvents(overlay, chatWidget) {
+    const stars = overlay.querySelectorAll('.rating-star');
+    const skipBtn = overlay.querySelector('.skip-rating');
+    const closeBtn = overlay.querySelector('.close-anyway');
+    const feedbackSection = overlay.querySelector('.feedback-section');
+    const textarea = overlay.querySelector('.feedback-text');
+    const submitBtn = overlay.querySelector('.submit-and-close');
+    
+    let selectedRating = 0;
+    
+    // Star rating
+    stars.forEach((star, index) => {
+      star.addEventListener('click', () => {
+        selectedRating = index + 1;
+        this.highlightStars(stars, selectedRating);
+        
+        // Show feedback for lower ratings
+        if (selectedRating <= 3) {
+          feedbackSection.style.display = 'block';
+          textarea.focus();
+        } else {
+          // High rating - submit immediately and close
+          this.submitCloseRating(selectedRating, '', overlay, chatWidget);
+        }
+      });
+    });
+    
+    // Skip rating
+    skipBtn.addEventListener('click', () => {
+      overlay.remove();
+      chatWidget.performClose();
+    });
+    
+    // Close without rating
+    closeBtn.addEventListener('click', () => {
+      overlay.remove();
+      chatWidget.performClose();
+    });
+    
+    // Submit with feedback
+    submitBtn.addEventListener('click', () => {
+      const feedback = textarea.value.trim();
+      this.submitCloseRating(selectedRating, feedback, overlay, chatWidget);
+    });
+  }
+
+  async submitCloseRating(rating, feedback, overlay, chatWidget) {
+    const ratingData = {
+      sessionId: chatWidget.sessionId,
+      tenantId: chatWidget.options.tenantId,
+      rating,
+      feedback,
+      timestamp: new Date().toISOString(),
+      context: 'close_dialog',
+      
+      // Session context
+      sessionDuration: chatWidget.getSessionDuration(),
+      messageCount: chatWidget.messages.length,
+      userMessages: chatWidget.messages.filter(m => m.sender === 'user').length
+    };
+    
+    try {
+      // Submit rating
+      await this.sendRatingData(ratingData);
+      this.storeRatingLocally(ratingData);
+      this.hasRated = true;
+      
+      // Show brief thanks and close
+      overlay.innerHTML = `
+        <div class="rating-thanks-close">
+          <div class="thanks-icon">🙏</div>
+          <h4>Bedankt voor je feedback!</h4>
+          <p>We waarderen je tijd.</p>
+        </div>
+      `;
+      
+      // Close after brief delay
+      setTimeout(() => {
+        overlay.remove();
+        chatWidget.performClose();
+      }, 1500);
+      
+      // Track the rating
+      if (chatWidget.userFingerprinting) {
+        chatWidget.trackEvent('satisfaction_close_rating', {
+          rating,
+          hasFeedback: !!feedback,
+          sessionDuration: ratingData.sessionDuration
+        });
+      }
+      
+    } catch (error) {
+      console.error('Close rating submission failed:', error);
+      overlay.innerHTML = `
+        <div class="rating-error-close">
+          <span>⚠️</span>
+          <p>Kon rating niet versturen</p>
+          <button onclick="this.parentElement.parentElement.remove(); chatWidget.performClose();">Sluit anyway</button>
+        </div>
+      `;
+    }
+  }
+
+  addCloseRatingStyles() {
+    const styles = document.createElement('style');
+    styles.id = 'close-rating-styles';
+    styles.textContent = `
+      .chatguus-rating-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        animation: fadeIn 0.3s ease-out;
+      }
+      
+      .rating-close-dialog {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 320px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      }
+      
+      .rating-close-dialog .rating-header h3 {
+        margin: 0 0 0.5rem 0;
+        color: #1f2937;
+        font-size: 1.2rem;
+      }
+      
+      .rating-close-dialog .rating-header p {
+        margin: 0 0 1.5rem 0;
+        color: #6b7280;
+        font-size: 0.95rem;
+      }
+      
+      .rating-close-dialog .rating-stars {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .rating-close-dialog .rating-star {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        opacity: 0.4;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      
+      .rating-close-dialog .rating-star:hover,
+      .rating-close-dialog .rating-star.active {
+        opacity: 1;
+        background: rgba(59, 130, 246, 0.1);
+        transform: scale(1.1);
+      }
+      
+      .rating-close-dialog .star-icon {
+        font-size: 1.5rem;
+      }
+      
+      .rating-close-dialog .star-label {
+        font-size: 0.7rem;
+        color: #6b7280;
+        white-space: nowrap;
+      }
+      
+      .rating-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        margin-top: 1rem;
+      }
+      
+      .rating-actions button {
+        padding: 0.5rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: #f9fafb;
+        color: #374151;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+      }
+      
+      .rating-actions button:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+      }
+      
+      .close-anyway {
+        background: #fee2e2 !important;
+        color: #dc2626 !important;
+        border-color: #fecaca !important;
+      }
+      
+      .close-anyway:hover {
+        background: #fecaca !important;
+      }
+      
+      .feedback-section {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 1rem;
+        margin-top: 1rem;
+      }
+      
+      .feedback-text {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.9rem;
+        resize: vertical;
+        margin-bottom: 1rem;
+      }
+      
+      .feedback-text:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      
+      .submit-and-close {
+        background: #3b82f6 !important;
+        color: white !important;
+        border-color: #3b82f6 !important;
+        font-weight: 500;
+      }
+      
+      .submit-and-close:hover {
+        background: #2563eb !important;
+      }
+      
+      .rating-thanks-close {
+        text-align: center;
+        padding: 1rem;
+      }
+      
+      .rating-thanks-close .thanks-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+      }
+      
+      .rating-thanks-close h4 {
+        margin: 0 0 0.5rem 0;
+        color: #059669;
+        font-size: 1.1rem;
+      }
+      
+      .rating-thanks-close p {
+        margin: 0;
+        color: #6b7280;
+        font-size: 0.9rem;
+      }
+      
+      .rating-error-close {
+        text-align: center;
+        padding: 1rem;
+      }
+      
+      .rating-error-close span {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 1rem;
+      }
+      
+      .rating-error-close button {
+        background: #6b7280;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 1rem;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      @media (max-width: 480px) {
+        .rating-close-dialog {
+          padding: 1.5rem;
+        }
+        
+        .rating-close-dialog .rating-stars {
+          gap: 0.25rem;
+        }
+        
+        .rating-close-dialog .star-icon {
+          font-size: 1.2rem;
+        }
+        
+        .rating-actions {
+          flex-direction: column;
+        }
+      }
+    `;
+    
+    document.head.appendChild(styles);
+  }
+
   bindRatingEventsToWidget(container, chatWidget) {
     const stars = container.querySelectorAll('.rating-star');
     const feedbackSection = container.querySelector('.feedback-section');

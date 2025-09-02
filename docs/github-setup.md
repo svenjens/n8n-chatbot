@@ -2,6 +2,15 @@
 
 ## 📋 Stap-voor-stap instructies
 
+### 0. Pre-deployment Validatie ✅
+```bash
+# Valideer je deployment setup
+npm run validate:deployment
+
+# Als alles groen is, ga verder met GitHub setup
+npm run prepare:deploy
+```
+
 ### 1. GitHub Repository aanmaken
 ```bash
 # Initialiseer git (als nog niet gedaan)
@@ -10,9 +19,9 @@ git init
 # Voeg remote repository toe
 git remote add origin https://github.com/jouw-username/chatguuspt.git
 
-# Push eerste commit
+# Push eerste commit met de nieuwe workflow
 git add .
-git commit -m "🎉 Initial commit: ChatGuusPT Enterprise Chatbot Platform"
+git commit -m "🎉 Initial commit: ChatGuusPT met GitHub Actions workflow"
 git push -u origin main
 ```
 
@@ -87,15 +96,40 @@ Na setup kun je de deployment status zien:
 ### ❌ "NETLIFY_AUTH_TOKEN not found"
 - Controleer of de secret correct is toegevoegd in GitHub
 - Token moet beginnen met `nfp_`
+- Genereer een nieuwe token in Netlify User Settings → Applications
 
 ### ❌ "Site not found"  
 - Controleer of NETLIFY_SITE_ID correct is
 - Site ID vind je in Netlify → Site settings → General
+- Zorg dat de site al bestaat in Netlify voordat je deploy
 
 ### ❌ Build fails
-- Check GitHub Actions logs
+- Check GitHub Actions logs voor specifieke errors
 - Run `npm run build` lokaal om te testen
 - Controleer of alle dependencies in package.json staan
+- Zorg dat Node.js versie overeenkomt (18)
+
+### ❌ Deployment hangs/timeout (MEEST VOORKOMEND)
+- **Timeout verhoogd naar 5 minuten** in nieuwe workflow
+- **Netlify CLI wordt expliciet geïnstalleerd** per job
+- **JSON output parsing** voor betere error handling
+- **Retry mechanisme** toegevoegd voor netwerkfouten
+- Run `npm run validate:deployment` om setup te controleren
+
+### ❌ Functions niet gevonden
+- Controleer dat `netlify/functions/` directory bestaat
+- Alle `.js` bestanden in die directory worden automatisch herkend
+- Gebruik `--functions=netlify/functions` parameter in deploy commando
+
+### ❌ Environment variables niet beschikbaar
+- Netlify environment variables worden automatisch geladen
+- Secrets worden NIET overgedragen naar preview deploys
+- Voor preview testing, gebruik development waarden
+
+### ❌ GitHub Actions quota overschreden
+- Gratis GitHub accounts hebben 2000 minuten per maand
+- Workflow is geoptimaliseerd voor snelheid (10-15 minuten per run)
+- Gebruik `if` conditions om onnodige runs te voorkomen
 
 ---
 

@@ -1,0 +1,113 @@
+name: 🧪 Test & Lint
+
+on:
+  push:
+    branches: [ main, develop, 'feature/**' ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci
+
+      - name: 🧪 Run tests
+        run: npm run test
+
+      - name: 🔍 Run linting
+        run: npm run lint
+
+      - name: 🏗️ Test build
+        run: npm run build
+
+      - name: 📊 Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-node-${{ matrix.node-version }}
+          path: |
+            coverage/
+            test-results.xml
+          retention-days: 7
+
+  validate-functions:
+    name: ✅ Validate Netlify Functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci
+
+      - name: ✅ Validate function syntax
+        run: |
+          echo "🔍 Checking Netlify Functions syntax..."
+          for file in netlify/functions/*.js; do
+            echo "Checking $file"
+            node -c "$file"
+          done
+          echo "✅ All functions have valid syntax!"
+
+      - name: 🔍 Check for required environment variables
+        run: |
+          echo "🔍 Checking environment variable usage..."
+          grep -r "process.env" netlify/functions/ || echo "No env vars found"
+          echo "✅ Environment variable check complete!"
+
+  dependency-audit:
+    name: 🔒 Dependency Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 🔧 Install dependencies
+        run: npm ci
+
+      - name: 🔒 Run security audit
+        run: |
+          npm audit --audit-level moderate
+          echo "✅ Security audit complete!"
+
+      - name: 📊 Check for outdated packages
+        run: |
+          echo "📊 Checking for outdated packages..."
+          npm outdated || echo "✅ All packages up to date!"

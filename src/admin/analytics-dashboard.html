@@ -119,6 +119,10 @@
             color: #ff4d4f;
         }
         
+        .stat-change.neutral {
+            color: #8c8c8c;
+        }
+        
         .charts-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -145,6 +149,88 @@
             font-weight: 600;
             margin-bottom: 24px;
             color: #262626;
+        }
+
+        /* Charts Placeholder Styles */
+        .charts-placeholder {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin: 2rem 0;
+            border: 2px dashed #e5e7eb;
+        }
+
+        .placeholder-content {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .placeholder-icon {
+            font-size: 3rem;
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+        }
+
+        .charts-placeholder h3 {
+            color: #374151;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .charts-placeholder p {
+            color: #6b7280;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .placeholder-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .placeholder-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #4b5563;
+            font-size: 0.9rem;
+            background: #f9fafb;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .placeholder-stat i {
+            color: #6b7280;
+        }
+
+        .charts-placeholder small {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .charts-placeholder {
+                padding: 2rem 1rem;
+            }
+            
+            .placeholder-stats {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: center;
+            }
+            
+            .placeholder-stat {
+                justify-content: center;
+            }
         }
         
         .missing-answers-section {
@@ -412,9 +498,9 @@
                     </div>
                 </div>
                 <div class="stat-value" id="avgAIRating">4.2</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    +0.3 deze week
+                <div class="stat-change neutral">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="aiRatingInfo">AI zelf-evaluatie</span>
                 </div>
             </div>
             
@@ -426,9 +512,9 @@
                     </div>
                 </div>
                 <div class="stat-value" id="userSatisfaction">87%</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    +5% deze week
+                <div class="stat-change neutral">
+                    <i class="fas fa-star"></i>
+                    <span id="satisfactionInfo">Gebruiker feedback</span>
                 </div>
             </div>
             
@@ -440,9 +526,9 @@
                     </div>
                 </div>
                 <div class="stat-value" id="missingAnswers">23</div>
-                <div class="stat-change negative">
-                    <i class="fas fa-arrow-down"></i>
-                    -7 deze week
+                <div class="stat-change neutral">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="missingAnswersInfo">Vragen zonder antwoord</span>
                 </div>
             </div>
             
@@ -454,9 +540,9 @@
                     </div>
                 </div>
                 <div class="stat-value" id="aiConfidence">78%</div>
-                <div class="stat-change positive">
-                    <i class="fas fa-arrow-up"></i>
-                    +12% deze week
+                <div class="stat-change neutral">
+                    <i class="fas fa-brain"></i>
+                    <span id="confidenceInfo">AI zekerheid niveau</span>
                 </div>
             </div>
             
@@ -738,11 +824,139 @@
             // Update Total Sessions - use real session data
             const totalSessions = analytics.summary?.totalSessions || 0;
             document.getElementById('totalSessions').textContent = totalSessions;
+            
+            // Update info texts with actual data where available
+            const totalAIRatings = analytics.summary?.totalRatings || 0;
+            const totalSatisfactionRatings = analytics.summary?.totalSatisfactionRatings || 0;
+            
+            // Update AI Rating info
+            if (totalAIRatings > 0) {
+                document.getElementById('aiRatingInfo').textContent = `${totalAIRatings} AI evaluaties`;
+            }
+            
+            // Update Satisfaction info  
+            if (totalSatisfactionRatings > 0) {
+                document.getElementById('satisfactionInfo').textContent = `${totalSatisfactionRatings} beoordelingen`;
+            }
+            
+            // Update Missing Answers info
+            if (missingCount === 0) {
+                document.getElementById('missingAnswersInfo').textContent = 'Alles beantwoord!';
+            } else {
+                document.getElementById('missingAnswersInfo').textContent = `${missingCount} vragen`;
+            }
+            
+            // Update Confidence info
+            if (totalAIRatings > 0) {
+                document.getElementById('confidenceInfo').textContent = `Gebaseerd op ${totalAIRatings} evaluaties`;
+            }
         }
         
         function updateCharts() {
-            createRatingsChart();
-            createCategoryChart();
+            const dataSource = document.getElementById('dataSourceFilter')?.value || 'live';
+            
+            // Always show charts for demo data, only check minimum data for live data
+            if (dataSource === 'demo' || hasMinimumDataForCharts()) {
+                showCharts();
+                createRatingsChart();
+                createCategoryChart();
+            } else {
+                hideChartsWithMessage();
+            }
+        }
+
+        function hasMinimumDataForCharts() {
+            const analytics = dashboardData.analytics || {};
+            const aiRatings = dashboardData.aiRatings || [];
+            const satisfactionRatings = dashboardData.satisfactionRatings || [];
+            
+            // Check if we have AI ratings or satisfaction ratings
+            const totalRatings = (analytics.summary?.totalRatings || 0) + 
+                               (analytics.summary?.totalSatisfactionRatings || 0);
+            
+            if (totalRatings === 0) {
+                return false;
+            }
+            
+            // Check date range of data
+            const trends = analytics.aiRatings?.trends || [];
+            if (trends.length === 0) {
+                return false;
+            }
+            
+            // Check if we have data spanning at least 3 days
+            const dates = trends.map(t => new Date(t.date));
+            if (dates.length < 3) {
+                return false;
+            }
+            
+            const oldestDate = new Date(Math.min(...dates));
+            const newestDate = new Date(Math.max(...dates));
+            const daysDifference = Math.ceil((newestDate - oldestDate) / (1000 * 60 * 60 * 24));
+            
+            return daysDifference >= 2; // At least 3 days (0, 1, 2 = 3 days)
+        }
+
+        function showCharts() {
+            document.querySelector('.charts-grid').style.display = 'grid';
+            const placeholder = document.querySelector('.charts-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+        }
+
+        function hideChartsWithMessage() {
+            document.querySelector('.charts-grid').style.display = 'none';
+            
+            // Remove existing placeholder if any
+            const existingPlaceholder = document.querySelector('.charts-placeholder');
+            if (existingPlaceholder) {
+                existingPlaceholder.remove();
+            }
+            
+            // Create placeholder message
+            const placeholder = document.createElement('div');
+            placeholder.className = 'charts-placeholder';
+            placeholder.innerHTML = `
+                <div class="placeholder-content">
+                    <div class="placeholder-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Charts worden binnenkort beschikbaar</h3>
+                    <p>We hebben minimaal 3 dagen aan data nodig om betekenisvolle trends te tonen.</p>
+                    <div class="placeholder-stats">
+                        <div class="placeholder-stat">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Huidige data: ${getCurrentDataDays()} dagen</span>
+                        </div>
+                        <div class="placeholder-stat">
+                            <i class="fas fa-clock"></i>
+                            <span>Nog ${Math.max(0, 3 - getCurrentDataDays())} dagen te gaan</span>
+                        </div>
+                    </div>
+                    <small>Charts verschijnen automatisch zodra we voldoende data hebben verzameld.</small>
+                </div>
+            `;
+            
+            // Insert after stats grid
+            const statsGrid = document.querySelector('.stats-grid');
+            statsGrid.insertAdjacentElement('afterend', placeholder);
+        }
+
+        function getCurrentDataDays() {
+            const analytics = dashboardData.analytics || {};
+            const trends = analytics.aiRatings?.trends || [];
+            
+            if (trends.length === 0) {
+                return 0;
+            }
+            
+            const dates = trends.map(t => new Date(t.date));
+            const oldestDate = new Date(Math.min(...dates));
+            const newestDate = new Date(Math.max(...dates));
+            const daysDifference = Math.ceil((newestDate - oldestDate) / (1000 * 60 * 60 * 24));
+            
+            return Math.max(1, daysDifference + 1); // +1 because same day = 1 day of data
         }
         
         function createRatingsChart() {
@@ -753,6 +967,7 @@
             }
             
             const dataSource = document.getElementById('dataSourceFilter')?.value || 'live';
+            const analytics = dashboardData.analytics || {};
             
             let dates, aiRatingData, satisfactionData;
             
@@ -762,23 +977,31 @@
                 aiRatingData = dates.map(() => Math.random() * 1 + 3.5);
                 satisfactionData = dates.map(() => Math.random() * 20 + 75);
             } else {
-                // Use real data from dashboardData
-                const analytics = dashboardData.analytics || {};
-                const trendData = analytics.trends?.daily || [];
-                const satisfactionTrends = dashboardData.satisfactionRatings?.trends?.daily || [];
+                // Use real data from API trends if available
+                const realTrends = analytics.aiRatings?.trends || [];
                 
-                if (trendData.length > 0) {
-                    dates = trendData.map(t => new Date(t.date));
-                    aiRatingData = trendData.map(t => parseFloat(t.averageRating) || 0);
+                if (realTrends.length > 0) {
+                    // Use real trend data
+                    dates = realTrends.map(t => new Date(t.date));
+                    aiRatingData = realTrends.map(t => parseFloat(t.avgRating) || 0);
+                    satisfactionData = realTrends.map(t => parseFloat(t.avgConfidence) || 0);
                 } else {
-                    dates = getLast30Days();
-                    aiRatingData = dates.map(() => 0); // No data
-                }
-                
-                if (satisfactionTrends.length > 0) {
-                    satisfactionData = satisfactionTrends.map(t => parseFloat(t.averageRating) * 20 || 0);
-                } else {
-                    satisfactionData = dates.map(() => 0); // No data
+                    // No trend data available - show only today if we have current data
+                    const currentAIRating = analytics.summary?.averageAIRating || 0;
+                    const currentSatisfaction = analytics.summary?.userSatisfactionRate || 0;
+                    const totalSessions = analytics.summary?.totalSessions || 0;
+                    
+                    if (totalSessions > 0) {
+                        // We have data - show today's point only
+                        dates = [new Date()]; // Only today
+                        aiRatingData = [currentAIRating];
+                        satisfactionData = [currentSatisfaction];
+                    } else {
+                        // No data at all - show empty chart
+                        dates = getLast7Days();
+                        aiRatingData = dates.map(() => null);
+                        satisfactionData = dates.map(() => null);
+                    }
                 }
             }
             
@@ -808,6 +1031,12 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    elements: {
+                        point: {
+                            radius: 4,
+                            hoverRadius: 6
+                        }
+                    },
                     scales: {
                         y: {
                             type: 'linear',
@@ -833,6 +1062,12 @@
                             grid: {
                                 drawOnChartArea: false,
                             },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
                         }
                     }
                 }
@@ -1066,6 +1301,16 @@
         function getLast30Days() {
             const days = [];
             for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                days.push(date);
+            }
+            return days;
+        }
+        
+        function getLast7Days() {
+            const days = [];
+            for (let i = 6; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
                 days.push(date);

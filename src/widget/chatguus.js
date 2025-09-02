@@ -414,20 +414,19 @@ class ChatGuusWidget {
   }
 
   toggle() {
-    this.isOpen = !this.isOpen;
-    this.widget.classList.toggle('open', this.isOpen);
-    this.toggleButton.classList.toggle('hidden', this.isOpen);
-    
     if (this.isOpen) {
+      // Closing - use same logic as close button
+      this.close();
+    } else {
+      // Opening
+      this.isOpen = true;
+      this.widget.classList.add('open');
+      this.toggleButton.classList.add('hidden');
       this.inputField.focus();
+      
       this.trackEvent('widget_opened', {
         method: 'toggle_button',
         messagesCount: this.messages.length
-      });
-    } else {
-      this.trackEvent('widget_closed', {
-        method: 'toggle_button',
-        sessionDuration: this.getSessionDuration()
       });
     }
   }
@@ -440,9 +439,45 @@ class ChatGuusWidget {
   }
 
   close() {
+    // Check if we should show satisfaction rating before closing
+    if (this.shouldShowRatingOnClose()) {
+      this.closeWithRating();
+      return;
+    }
+    
+    this.performClose();
+  }
+
+  shouldShowRatingOnClose() {
+    // Don't show rating if already rated or if there's no conversation
+    if (this.satisfactionRating.hasRated || this.messages.length <= 1) {
+      return false;
+    }
+    
+    // Show rating if user has had a meaningful conversation
+    const userMessages = this.messages.filter(m => m.sender === 'user').length;
+    const sessionDuration = this.getSessionDuration();
+    
+    // Show rating if user sent at least 2 messages and session lasted more than 30 seconds
+    return userMessages >= 2 && sessionDuration > 30000;
+  }
+
+  closeWithRating() {
+    // Show satisfaction rating before closing
+    this.satisfactionRating.promptForRatingOnClose(this);
+  }
+
+  performClose() {
     this.isOpen = false;
     this.widget.classList.remove('open');
     this.toggleButton.classList.remove('hidden');
+    
+    this.trackEvent('widget_closed', {
+      method: 'close_button',
+      sessionDuration: this.getSessionDuration(),
+      messageCount: this.messages.length,
+      showedRating: this.satisfactionRating.ratingPromptShown
+    });
   }
 
   addWelcomeMessage() {

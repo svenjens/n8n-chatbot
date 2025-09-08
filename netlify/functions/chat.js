@@ -303,6 +303,9 @@ exports.handler = async (event, context) => {
     if (tenantId === 'default') {
       console.warn(`[${sessionId}] No tenant header provided, using 'default'. Consider adding X-Tenant-ID header.`);
     }
+    
+    // Map mijn-bedrijf to koepel configuration for compatibility
+    const effectiveTenantId = tenantId === 'mijn-bedrijf' ? 'koepel' : tenantId;
 
     // Validate input
     if (!message || typeof message !== 'string' || message.trim().length === 0) {

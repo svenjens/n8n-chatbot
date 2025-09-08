@@ -52,6 +52,48 @@ export class TenantManager {
       }
     });
 
+    // Mijn-bedrijf tenant (same config as Koepel)
+    this.addTenant('mijn-bedrijf', {
+      id: 'mijn-bedrijf',
+      name: 'Mijn Bedrijf',
+      domain: 'cupolaxs.nl',
+      branding: {
+        primaryColor: '#000000', // Black color
+        secondaryColor: '#64748b',
+        logo: '/assets/koepel-logo.png',
+        avatar: '🤖',
+        companyName: 'Mijn Bedrijf',
+        botName: 'Guus',
+        welcomeMessage: 'Wat kan ik voor je doen?'
+      },
+      personality: {
+        name: 'Guus',
+        traits: ['vriendelijk', 'gastvrij', 'behulpzaam', 'professioneel'],
+        tone: 'informeel maar respectvol',
+        language: 'nl'
+      },
+      routing: {
+        general: 'welcome@cupolaxs.nl',
+        it: 'support@axs-ict.com',
+        cleaning: 'ralphcassa@gmail.com',
+        events: 'irene@cupolaxs.nl'
+      },
+      features: {
+        serviceRequests: true,
+        eventInquiries: true,
+        faqSystem: true,
+        emailRouting: true,
+        googleSheets: true,
+        satisfactionRatings: true,
+        analytics: true,
+        aiSelfRating: true
+      },
+      n8nConfig: {
+        webhookUrl: process.env.N8N_WEBHOOK_URL_KOEPEL,
+        workflowId: 'chatguus-mijn-bedrijf'
+      }
+    });
+
     // Example: Additional tenant for demo
     this.addTenant('demo-company', {
       id: 'demo-company',

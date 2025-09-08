@@ -21,6 +21,25 @@ const handler = async (event, context) => {
     // Get tenant ID from query params
     const tenantId = event.queryStringParameters?.tenant || 'koepel';
     
+    // Tenant-specific avatar configuration
+    const getTenantAvatarConfig = (tenantId) => {
+      switch (tenantId) {
+        case 'mijn-bedrijf':
+        case 'koepel':
+          return {
+            avatar: 'https://chatguuspt.netlify.app/assets/guus-avatar.jpg',
+            avatarFallback: '🤖'
+          };
+        default:
+          return {
+            avatar: '🤖',
+            avatarFallback: '🤖'
+          };
+      }
+    };
+    
+    const tenantAvatarConfig = getTenantAvatarConfig(tenantId);
+    
     // Build widget with tenant configuration
     const netlifyConfig = {
       apiEndpoint: 'https://chatguuspt.netlify.app/.netlify/functions/chat',
@@ -32,6 +51,9 @@ const handler = async (event, context) => {
     const widgetContent = `
       // Netlify Configuration
       window.CHATGUUS_CONFIG = ${JSON.stringify(netlifyConfig)};
+      
+      // Tenant-specific Configuration  
+      window.CHATGUUS_TENANT_CONFIG = ${JSON.stringify(tenantAvatarConfig)};
       
       // Embedded CSS Styles
       const styles = document.createElement('style');
@@ -298,6 +320,9 @@ const handler = async (event, context) => {
       // Standalone ChatGuus Widget Class
       class ChatGuusWidget {
         constructor(options = {}) {
+          // Get tenant-specific defaults
+          const tenantDefaults = window.CHATGUUS_TENANT_CONFIG || {};
+          
           this.options = {
             target: '#chatguus-widget',
             webhookUrl: '/.netlify/functions/chat',
@@ -310,6 +335,7 @@ const handler = async (event, context) => {
             tenantId: 'koepel',
             retryAttempts: 2,
             timeoutMs: 8000,
+            ...tenantDefaults,
             ...options
           };
           
@@ -340,9 +366,10 @@ const handler = async (event, context) => {
         }
 
         createAvatarContent() {
-          // Check if avatar URL is provided and looks like a URL
+          // Check if avatar URL is provided and looks like a URL (http/https or absolute path)
           if (this.options.avatar && (this.options.avatar.startsWith('http') || this.options.avatar.startsWith('/'))) {
-            return \`<img src="\${this.options.avatar}" alt="Guus" onerror="this.parentElement.innerHTML='\${this.options.avatarFallback || '🤖'}'; this.parentElement.classList.add('emoji');" />\`;
+            const fallbackAvatar = this.options.avatarFallback || '🤖';
+            return \`<img src="\${this.options.avatar}" alt="Guus" onerror="this.parentElement.innerHTML='\${fallbackAvatar}'; this.parentElement.classList.add('emoji');" />\`;
           }
           // Fallback to emoji or provided avatar text
           return this.options.avatar || this.options.avatarFallback || '🤖';

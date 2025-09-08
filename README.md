@@ -407,7 +407,11 @@ npm run dev:netlify # Netlify Functions local development
   ChatGuus.init({
     theme: 'koepel',
     tenantId: 'your-company',
-    welcomeMessage: 'Hello! How can I help you?'
+    welcomeMessage: 'Hello! How can I help you?',
+    
+    // Avatar configuratie (optioneel)
+    avatar: 'https://example.com/avatar.jpg', // Custom avatar URL
+    avatarFallback: '🤖' // Fallback emoji als avatar niet laadt
   });
 </script>
 ```
@@ -424,7 +428,9 @@ const ChatGuusWidget = () => {
     script.onload = () => {
       window.ChatGuus?.init({
         theme: 'koepel',
-        tenantId: 'your-company'
+        tenantId: 'your-company',
+        avatar: 'https://example.com/avatar.jpg', // Custom avatar
+        avatarFallback: '🤖'
       });
     };
     document.body.appendChild(script);
@@ -708,6 +714,51 @@ npm run test:security # Security scanning
 - **Prettier**: Automated code formatting
 - **Husky**: Pre-commit hooks for quality gates
 - **TypeScript**: Type safety and developer experience
+
+---
+
+## 🖼️ **Avatar Configuration**
+
+ChatGuus ondersteunt nu aangepaste avatars voor een persoonlijkere ervaring:
+
+### Standaard Configuratie (Guus Foto)
+Voor `mijn-bedrijf` en `koepel` tenants wordt automatisch de Guus foto gebruikt:
+
+```javascript
+ChatGuus.init({
+  tenantId: 'mijn-bedrijf',
+  // Guus foto wordt automatisch geladen
+});
+```
+
+### Custom Avatar Opties
+
+```javascript
+ChatGuus.init({
+  // Foto avatar (absolute URL)
+  avatar: 'https://example.com/my-avatar.jpg',
+  avatarFallback: '🤖',
+  
+  // Lokale afbeelding (absolute path)
+  avatar: '/assets/custom-avatar.png',
+  avatarFallback: '👨‍💼',
+  
+  // Emoji avatar
+  avatar: '👨‍💼',
+  
+  // Overschrijf standaard Guus foto
+  avatar: 'https://my-domain.com/custom-guus.jpg',
+  avatarFallback: '🤖'
+});
+```
+
+### Avatar Specificaties
+- **Formaat**: JPG, PNG, WebP
+- **Afmetingen**: 200x200px tot 500x500px (vierkant aanbevolen)
+- **Bestandsgrootte**: < 100KB voor optimale prestaties
+- **Fallback**: Valt automatisch terug naar emoji als afbeelding niet laadt
+
+📖 **Uitgebreide documentatie**: [`docs/avatar-configuration.md`](docs/avatar-configuration.md)
 
 ---
 

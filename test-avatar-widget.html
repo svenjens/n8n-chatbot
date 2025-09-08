@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test ChatGuus Avatar Widget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Simuleer /servicerequest URL -->
+    <script>
+        history.replaceState(null, '', '/servicerequest');
+    </script>
+
+    <div class="container">
+        <h1>🧪 ChatGuus Avatar Test</h1>
+        
+        <div class="info">
+            <strong>Avatar Test Opties:</strong><br>
+            Test verschillende avatar configuraties om te zien hoe ze werken.
+            De avatar wordt getoond in de chat header.
+        </div>
+
+        <div class="test-buttons">
+            <button onclick="loadWidgetWithPhoto()">📷 Guus Foto</button>
+            <button onclick="loadWidgetWithEmoji()">🤖 Robot Emoji</button>
+            <button onclick="loadWidgetWithCustomEmoji()">👨‍💼 Custom Emoji</button>
+            <button onclick="loadWidgetWithBrokenURL()">❌ Broken URL (Test Fallback)</button>
+            <button onclick="clearWidget()">🗑️ Clear Widget</button>
+        </div>
+
+        <h2>Test Avatar Configuraties</h2>
+        <p>Klik op de knoppen hierboven om verschillende avatar instellingen te testen.</p>
+        
+        <h3>Hoe Avatar Functionaliteit Werkt:</h3>
+        <ul>
+            <li><strong>Foto URL:</strong> Als je een geldige URL opgeeft, wordt de foto getoond</li>
+            <li><strong>Fallback:</strong> Als de foto niet laadt, valt het terug naar emoji</li>
+            <li><strong>Emoji:</strong> Je kunt ook direct een emoji als avatar gebruiken</li>
+            <li><strong>Styling:</strong> Foto's worden automatisch rond gemaakt en goed gepositioneerd</li>
+        </ul>
+
+        <h3>Voor Productie:</h3>
+        <p>Upload de echte foto van Guus naar <code>src/assets/guus-avatar.jpg</code> en run <code>npm run build</code></p>
+    </div>
+
+    <script>
+        function clearWidget() {
+            // Remove existing widget elements
+            const existingWidget = document.querySelector('.chatguus-widget');
+            const existingToggle = document.querySelector('.chatguus-toggle');
+            const existingScript = document.querySelector('script[src*="widget"]');
+            
+            if (existingWidget) existingWidget.remove();
+            if (existingToggle) existingToggle.remove();
+            if (existingScript) existingScript.remove();
+            
+            // Clear ChatGuus global
+            if (window.ChatGuus) {
+                delete window.ChatGuus;
+            }
+        }
+
+        function loadWidget(config) {
+            clearWidget();
+            
+            console.log('Loading widget with config:', config);
+            
+            // Load widget script
+            const script = document.createElement('script');
+            script.src = 'https://chatguuspt.netlify.app/.netlify/functions/widget?v=' + Date.now();
+            script.defer = true;
+            
+            script.onload = function() {
+                if (window.ChatGuus) {
+                    ChatGuus.init({
+                        theme: 'koepel',
+                        tenantId: 'mijn-bedrijf',
+                        primaryColor: '#000000',
+                        position: 'bottom-right',
+                        welcomeMessage: 'Test avatar configuratie!',
+                        ...config
+                    });
+                    console.log('Widget initialized with avatar:', config.avatar || config.avatarFallback);
+                }
+            };
+            
+            document.body.appendChild(script);
+        }
+
+        function loadWidgetWithPhoto() {
+            loadWidget({
+                avatar: 'https://chatguuspt.netlify.app/assets/guus-avatar.jpg',
+                avatarFallback: '🤖'
+            });
+        }
+
+        function loadWidgetWithEmoji() {
+            loadWidget({
+                avatar: '🤖',
+                avatarFallback: '🤖'
+            });
+        }
+
+        function loadWidgetWithCustomEmoji() {
+            loadWidget({
+                avatar: '👨‍💼',
+                avatarFallback: '🤖'
+            });
+        }
+
+        function loadWidgetWithBrokenURL() {
+            loadWidget({
+                avatar: 'https://example.com/broken-image.jpg',
+                avatarFallback: '❌'
+            });
+        }
+
+        // Auto-load with photo by default
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                loadWidgetWithPhoto();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -23,7 +23,7 @@ const handler = async (event, context) => {
     
     // Build widget with tenant configuration
     const netlifyConfig = {
-      apiEndpoint: '/.netlify/functions/chat',
+      apiEndpoint: 'https://chatguuspt.netlify.app/.netlify/functions/chat',
       tenantId: tenantId,
       fallbackMode: true
     };
@@ -732,7 +732,7 @@ const handler = async (event, context) => {
 
         async storeAIRating(rating) {
           try {
-            const response = await fetch('/.netlify/functions/ai-analytics?action=store_ai_rating', {
+            const response = await fetch('https://chatguuspt.netlify.app/.netlify/functions/ai-analytics?action=store_ai_rating', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

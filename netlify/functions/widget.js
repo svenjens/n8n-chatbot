@@ -118,6 +118,19 @@ const handler = async (event, context) => {
           align-items: center;
           justify-content: center;
           font-size: 20px;
+          overflow: hidden;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .chatguus-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+        }
+
+        .chatguus-avatar.emoji {
+          font-size: 20px;
         }
 
         .chatguus-title {
@@ -292,6 +305,8 @@ const handler = async (event, context) => {
             welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Ik help je graag met vragen over onze faciliteiten, openingstijden, reserveringen of service requests. Waar kan ik je mee helpen?',
             position: 'bottom-right',
             primaryColor: '#2563eb',
+            avatar: 'https://chatguuspt.netlify.app/assets/guus-avatar.jpg',
+            avatarFallback: '🤖',
             tenantId: 'koepel',
             retryAttempts: 2,
             timeoutMs: 8000,
@@ -324,6 +339,15 @@ const handler = async (event, context) => {
           return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
         }
 
+        createAvatarContent() {
+          // Check if avatar URL is provided and looks like a URL
+          if (this.options.avatar && (this.options.avatar.startsWith('http') || this.options.avatar.startsWith('/'))) {
+            return \`<img src="\${this.options.avatar}" alt="Guus" onerror="this.parentElement.innerHTML='\${this.options.avatarFallback || '🤖'}'; this.parentElement.classList.add('emoji');" />\`;
+          }
+          // Fallback to emoji or provided avatar text
+          return this.options.avatar || this.options.avatarFallback || '🤖';
+        }
+
         async init() {
           this.createWidget();
           this.bindEvents();
@@ -343,9 +367,12 @@ const handler = async (event, context) => {
           // Create widget container
           this.widget = document.createElement('div');
           this.widget.className = 'chatguus-widget position-' + this.options.position;
+          // Create avatar content based on options
+          const avatarContent = this.createAvatarContent();
+          
           this.widget.innerHTML = \`
             <div class="chatguus-header">
-              <div class="chatguus-avatar">🤖</div>
+              <div class="chatguus-avatar">\${avatarContent}</div>
               <div class="chatguus-title">
                 <h3>Guus van de Koepel</h3>
                 <p>Online • Klaar om te helpen</p>

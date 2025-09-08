@@ -46,4 +46,28 @@ if (fs.existsSync(adminDir)) {
   });
 }
 
+// Copy assets if they exist
+if (fs.existsSync('./src/assets')) {
+  console.log('📁 Copying assets to dist folder...');
+  
+  // Create assets directory in dist
+  if (!fs.existsSync('./dist/assets')) {
+    fs.mkdirSync('./dist/assets', { recursive: true });
+  }
+  
+  // Copy all files from src/assets to dist/assets
+  const assetFiles = fs.readdirSync('./src/assets');
+  assetFiles.forEach(file => {
+    const srcPath = path.join('./src/assets', file);
+    const destPath = path.join('./dist/assets', file);
+    
+    if (fs.statSync(srcPath).isFile()) {
+      fs.copyFileSync(srcPath, destPath);
+      console.log(`✅ Copied ${file}`);
+    }
+  });
+  
+  console.log('🎉 Assets copied successfully!');
+}
+
 console.log('🎉 Examples copied successfully!');

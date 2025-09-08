@@ -19,7 +19,8 @@ export class TenantManager {
         primaryColor: '#2563eb',
         secondaryColor: '#64748b',
         logo: '/assets/koepel-logo.png',
-        avatar: '🤖',
+        avatar: 'https://chatguuspt.netlify.app/assets/guus-avatar.jpg',
+        avatarFallback: '🤖',
         companyName: 'De Koepel',
         botName: 'Guus',
         welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen?'
@@ -61,7 +62,8 @@ export class TenantManager {
         primaryColor: '#000000', // Black color
         secondaryColor: '#64748b',
         logo: '/assets/koepel-logo.png',
-        avatar: '🤖',
+        avatar: 'https://chatguuspt.netlify.app/assets/guus-avatar.jpg',
+        avatarFallback: '🤖',
         companyName: 'Mijn Bedrijf',
         botName: 'Guus',
         welcomeMessage: 'Wat kan ik voor je doen?'

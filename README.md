@@ -727,9 +727,12 @@ Voor `mijn-bedrijf` en `koepel` tenants wordt automatisch de Guus foto gebruikt:
 ```javascript
 ChatGuus.init({
   tenantId: 'mijn-bedrijf',
-  // Guus foto wordt automatisch geladen
+  primaryColor: '#000000',
+  // Guus foto wordt automatisch geladen - geen avatar parameter nodig!
 });
 ```
+
+**✨ Nieuw**: De `mijn-bedrijf` tenant toont nu automatisch de Guus foto zonder dat je de `avatar` parameter hoeft op te geven.
 
 ### Custom Avatar Opties
 

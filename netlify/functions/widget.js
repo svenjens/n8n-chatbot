@@ -323,18 +323,23 @@ const handler = async (event, context) => {
           // Get tenant-specific defaults
           const tenantDefaults = window.CHATGUUS_TENANT_CONFIG || {};
           
-          this.options = {
+          // Base defaults
+          const baseDefaults = {
             target: '#chatguus-widget',
             webhookUrl: '/.netlify/functions/chat',
             theme: 'koepel',
             welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Ik help je graag met vragen over onze faciliteiten, openingstijden, reserveringen of service requests. Waar kan ik je mee helpen?',
             position: 'bottom-right',
             primaryColor: '#2563eb',
-            avatar: 'https://chatguuspt.netlify.app/assets/guus-avatar.jpg',
+            avatar: '🤖',
             avatarFallback: '🤖',
             tenantId: 'koepel',
             retryAttempts: 2,
-            timeoutMs: 8000,
+            timeoutMs: 8000
+          };
+
+          this.options = {
+            ...baseDefaults,
             ...tenantDefaults,
             ...options
           };

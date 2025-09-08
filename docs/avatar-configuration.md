@@ -12,13 +12,16 @@ Voor de `mijn-bedrijf` en `koepel` tenants is de Guus foto standaard geconfigure
 
 ## Avatar Opties
 
-### 1. Standaard Guus Foto (Aanbevolen)
+### 1. Standaard Guus Foto (Automatisch voor mijn-bedrijf)
 ```javascript
 ChatGuus.init({
   tenantId: 'mijn-bedrijf',
-  // Guus foto wordt automatisch geladen
+  primaryColor: '#000000',
+  // Guus foto wordt automatisch geladen - geen avatar parameter nodig!
 });
 ```
+
+**Let op**: Voor de `mijn-bedrijf` tenant wordt de Guus foto automatisch gebruikt als standaard avatar. Je hoeft geen `avatar` parameter op te geven.
 
 ### 2. Custom Avatar URL
 ```javascript

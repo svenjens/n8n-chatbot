@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test ChatGuus Widget - Servicerequest</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .debug {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 ChatGuus Widget Test</h1>
+        <p>Deze pagina simuleert de /servicerequest URL en test de ChatGuus widget.</p>
+        <p><strong>Verwachting:</strong> Een zwarte chat button zou rechtsonder moeten verschijnen.</p>
+        
+        <div id="debug" class="debug">Debug log wordt hier getoond...</div>
+        
+        <h2>Test Content</h2>
+        <p>Dit is de inhoud van de servicerequest pagina.</p>
+        <p>De chat widget zou automatisch moeten laden.</p>
+    </div>
+
+    <script>
+        // Debug logging
+        let debugElement = document.getElementById('debug');
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugElement.textContent += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+        
+        // Simuleer /servicerequest URL
+        history.replaceState(null, '', '/servicerequest');
+        log('✅ URL set to /servicerequest');
+        
+        // Je originele script met extra logging
+        (function () {
+            log('🚀 Starting ChatGuus widget script...');
+            
+            // Laat de widget alleen op /servicerequest (met of zonder trailing slash) laden
+            var path = window.location.pathname.toLowerCase().replace(/\/+$/,'');
+            log(`📍 Current path: "${path}"`);
+            
+            if (path !== '/servicerequest') {
+                log('❌ Path check failed - widget will not load');
+                return;
+            }
+            
+            log('✅ Path check passed - loading widget...');
+            
+            // Laad het script pas als we op de juiste pagina zijn
+            var s = document.createElement('script');
+            s.src = 'https://chatguuspt.netlify.app/.netlify/functions/widget';
+            s.defer = true;
+            
+            s.onload = function () {
+                log('✅ Widget script loaded');
+                
+                if (window.ChatGuus) {
+                    log('✅ ChatGuus object found - initializing...');
+                    
+                    try {
+                        ChatGuus.init({
+                            theme: 'koepel',
+                            tenantId: 'mijn-bedrijf',
+                            primaryColor: '#000000', // Zwart
+                            position: 'bottom-right',
+                            welcomeMessage: 'Wat kan ik voor je doen?'
+                        });
+                        log('🎉 ChatGuus initialized successfully!');
+                        log('🎨 Primary color set to black (#000000)');
+                        
+                        // Check if elements were created
+                        setTimeout(() => {
+                            const toggle = document.querySelector('.chatguus-toggle');
+                            if (toggle) {
+                                log('✅ Toggle button created and should be visible');
+                                const style = window.getComputedStyle(toggle);
+                                log(`🎨 Button background: ${style.backgroundColor}`);
+                                log(`📍 Button position: ${style.position} ${style.bottom} ${style.right}`);
+                                log(`🔢 Button z-index: ${style.zIndex}`);
+                            } else {
+                                log('❌ Toggle button not found in DOM');
+                            }
+                        }, 1000);
+                        
+                    } catch (error) {
+                        log(`❌ Error initializing ChatGuus: ${error.message}`);
+                    }
+                } else {
+                    log('❌ ChatGuus object not found after script load');
+                }
+            };
+            
+            s.onerror = function() {
+                log('❌ Failed to load widget script');
+            };
+            
+            log('📡 Adding script to page...');
+            document.body.appendChild(s);
+        })();
+        
+        // Extra checks
+        setTimeout(() => {
+            log('🔍 Final widget status check...');
+            const widget = document.querySelector('.chatguus-widget');
+            const toggle = document.querySelector('.chatguus-toggle');
+            
+            if (widget && toggle) {
+                log('🎉 SUCCESS: Widget fully loaded and ready!');
+            } else {
+                log('❌ FAILED: Widget not properly loaded');
+                log('💡 Possible issues:');
+                log('  - Ad blocker blocking the widget');
+                log('  - Content Security Policy blocking scripts');
+                log('  - Network connectivity issues');
+                log('  - JavaScript errors in console');
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

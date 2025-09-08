@@ -69,7 +69,7 @@ const handler = async (event, context) => {
           position: fixed;
           width: 60px;
           height: 60px;
-          background: #2563eb;
+          background: var(--chatguus-primary-color, #2563eb);
           border-radius: 50%;
           border: none;
           cursor: pointer;
@@ -79,6 +79,7 @@ const handler = async (event, context) => {
           justify-content: center;
           z-index: 10001;
           transition: all 0.3s ease;
+          color: white;
         }
 
         .chatguus-toggle.position-bottom-right {
@@ -100,7 +101,7 @@ const handler = async (event, context) => {
         }
 
         .chatguus-header {
-          background: #2563eb;
+          background: var(--chatguus-primary-color, #2563eb);
           color: white;
           padding: 16px;
           display: flex;
@@ -167,7 +168,7 @@ const handler = async (event, context) => {
         }
 
         .chatguus-message.user {
-          background: #2563eb;
+          background: var(--chatguus-primary-color, #2563eb);
           color: white;
           align-self: flex-end;
           border-bottom-right-radius: 4px;
@@ -241,11 +242,11 @@ const handler = async (event, context) => {
         }
 
         .chatguus-input input:focus {
-          border-color: #2563eb;
+          border-color: var(--chatguus-primary-color, #2563eb);
         }
 
         .chatguus-send {
-          background: #2563eb;
+          background: var(--chatguus-primary-color, #2563eb);
           border: none;
           border-radius: 50%;
           width: 40px;
@@ -330,6 +331,9 @@ const handler = async (event, context) => {
         }
 
         createWidget() {
+          // Set CSS custom property for primary color
+          document.documentElement.style.setProperty('--chatguus-primary-color', this.options.primaryColor);
+          
           // Create toggle button
           this.toggleButton = document.createElement('button');
           this.toggleButton.className = 'chatguus-toggle position-' + this.options.position;

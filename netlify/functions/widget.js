@@ -289,7 +289,7 @@ const handler = async (event, context) => {
             target: '#chatguus-widget',
             webhookUrl: '/.netlify/functions/chat',
             theme: 'koepel',
-            welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Waar kan ik je mee helpen?',
+            welcomeMessage: 'Hallo! Ik ben Guus van de Koepel. Ik help je graag met vragen over onze faciliteiten, openingstijden, reserveringen of service requests. Waar kan ik je mee helpen?',
             position: 'bottom-right',
             primaryColor: '#2563eb',
             tenantId: 'koepel',

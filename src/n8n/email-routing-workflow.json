@@ -1,0 +1,162 @@
+{
+  "name": "ChatGuusPT Email Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatguus-email",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Email Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "chatguus-email"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bepaal email routing op basis van action type\ntry {\n  const inputData = $input.first()?.json;\n  \n  if (!inputData) {\n    throw new Error('No input data received');\n  }\n\n  // Extract action and message from webhook data\n  const action = inputData.action || {};\n  const message = inputData.message || '[Geen bericht]';\n  const sessionId = inputData.sessionId || 'unknown-' + Date.now();\n  const url = inputData.url || 'ChatGuusPT';\n  const timestamp = inputData.timestamp || new Date().toISOString();\n  const userMessage = inputData.userMessage || message;\n  \n  // Determine email routing based on action type\n  let routingEmail = 'welcome@cupolaxs.nl'; // default\n  let category = 'Algemeen';\n  let emailSubject = 'Nieuwe aanvraag via ChatGuusPT';\n  \n  if (action.type === 'service_request_form') {\n    // Check if it's IT related\n    const msgLower = (userMessage || '').toLowerCase();\n    if (msgLower.includes('it') || msgLower.includes('computer') || \n        msgLower.includes('technisch') || msgLower.includes('wifi') ||\n        msgLower.includes('internet') || msgLower.includes('laptop') ||\n        msgLower.includes('printer') || msgLower.includes('systeem')) {\n      routingEmail = 'support@axs-ict.com';\n      category = 'IT Support';\n      emailSubject = '🔧 IT Support aanvraag via ChatGuusPT';\n    } else if (msgLower.includes('schoon') || msgLower.includes('vuil') ||\n               msgLower.includes('poetsen') || msgLower.includes('afval')) {\n      routingEmail = 'ralphcassa@gmail.com';\n      category = 'Schoonmaak';\n      emailSubject = '🧹 Schoonmaak aanvraag via ChatGuusPT';\n    } else {\n      routingEmail = 'welcome@cupolaxs.nl';\n      category = 'Service Request';\n      emailSubject = '🔧 Service aanvraag via ChatGuusPT';\n    }\n  } else if (action.type === 'event_inquiry_form') {\n    routingEmail = 'irene@cupolaxs.nl';\n    category = 'Event Inquiry';\n    emailSubject = '🎉 Nieuwe evenement aanvraag via ChatGuusPT';\n  } else if (action.type === 'event_modification') {\n    routingEmail = 'welcome@cupolaxs.nl';\n    category = 'Event Modificatie';\n    emailSubject = '📋 Event wijziging via ChatGuusPT';\n  } else if (action.type === 'complaint_form') {\n    routingEmail = 'welcome@cupolaxs.nl';\n    category = 'Klacht';\n    emailSubject = '⚠️ Klacht via ChatGuusPT';\n  } else {\n    // No action needed, skip email\n    return [];\n  }\n\n  // Return enriched data for email\n  return [{\n    json: {\n      routingEmail: routingEmail,\n      category: category,\n      emailSubject: emailSubject,\n      message: message,\n      userMessage: userMessage,\n      sessionId: sessionId,\n      url: url,\n      timestamp: timestamp,\n      priority: action.priority || 'medium',\n      urgent: action.urgent || false,\n      actionType: action.type\n    }\n  }];\n  \n} catch (error) {\n  console.error('Email routing error:', error);\n  // Return empty to skip email on error\n  return [];\n}"
+      },
+      "id": "email-router-node",
+      "name": "Determine Email Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.routingEmail }}",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; }\n        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 8px 8px 0 0; }\n        .content { background: white; padding: 25px; border-radius: 0 0 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n        .field { margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #667eea; }\n        .label { font-weight: bold; color: #495057; margin-bottom: 8px; }\n        .value { color: #212529; }\n        .urgent { border-left-color: #dc3545; background: #fff5f5; }\n        .footer { margin-top: 20px; padding-top: 20px; border-top: 2px solid #e9ecef; font-size: 14px; color: #6c757d; text-align: center; }\n        .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-left: 10px; }\n        .badge-urgent { background: #dc3545; color: white; }\n        .badge-high { background: #ffc107; color: #000; }\n        .badge-medium { background: #17a2b8; color: white; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h2 style=\"margin: 0;\">{{ $json.category }}</h2>\n            <p style=\"margin: 5px 0 0 0; opacity: 0.9;\">ChatGuusPT Notification</p>\n        </div>\n        \n        <div class=\"content\">\n            <div class=\"field {{ $json.urgent ? 'urgent' : '' }}\">\n                <div class=\"label\">💬 Klant vraag:</div>\n                <div class=\"value\">{{ $json.userMessage }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🤖 Guus antwoord:</div>\n                <div class=\"value\">{{ $json.message }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">📋 Details:</div>\n                <div class=\"value\">\n                    <strong>Sessie ID:</strong> {{ $json.sessionId }}<br>\n                    <strong>Tijdstip:</strong> {{ $json.timestamp }}<br>\n                    <strong>Locatie:</strong> {{ $json.url }}<br>\n                    <strong>Categorie:</strong> {{ $json.category }}\n                    {{ $json.urgent ? '<span class=\"badge badge-urgent\">URGENT</span>' : '' }}\n                    {{ $json.priority === 'high' ? '<span class=\"badge badge-high\">HOOG</span>' : '' }}\n                    {{ $json.priority === 'medium' ? '<span class=\"badge badge-medium\">NORMAAL</span>' : '' }}\n                </div>\n            </div>\n        </div>\n        \n        <div class=\"footer\">\n            <p>📧 Dit bericht is automatisch verzonden door ChatGuusPT<br>\n            💻 Powered by Koepel AI Assistant</p>\n        </div>\n    </div>\n</body>\n</html>"
+      },
+      "id": "gmail-send-node",
+      "name": "Send via Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": "={{ $env.GOOGLE_SHEETS_ID }}",
+        "sheetName": "ChatGuusPT Logs",
+        "dataMode": "define",
+        "fieldsUi": {
+          "values": [
+            {
+              "fieldId": "Timestamp",
+              "fieldValue": "={{ $json.timestamp }}"
+            },
+            {
+              "fieldId": "Session ID",
+              "fieldValue": "={{ $json.sessionId }}"
+            },
+            {
+              "fieldId": "Category",
+              "fieldValue": "={{ $json.category }}"
+            },
+            {
+              "fieldId": "User Message",
+              "fieldValue": "={{ $json.userMessage }}"
+            },
+            {
+              "fieldId": "Guus Response",
+              "fieldValue": "={{ $json.message }}"
+            },
+            {
+              "fieldId": "Email Sent To",
+              "fieldValue": "={{ $json.routingEmail }}"
+            },
+            {
+              "fieldId": "Priority",
+              "fieldValue": "={{ $json.priority }}"
+            },
+            {
+              "fieldId": "Urgent",
+              "fieldValue": "={{ $json.urgent ? 'Yes' : 'No' }}"
+            },
+            {
+              "fieldId": "URL",
+              "fieldValue": "={{ $json.url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sheets-log-node",
+      "name": "Log to Sheets (Optional)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [680, 480]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"emailSent\": $json.routingEmail, \"category\": $json.category } }}",
+        "options": {}
+      },
+      "id": "response-node",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Email Webhook": {
+      "main": [
+        [
+          {
+            "node": "Determine Email Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Email Route": {
+      "main": [
+        [
+          {
+            "node": "Send via Gmail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Sheets (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send via Gmail": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["chatbot", "email", "koepel"],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "versionId": "2"
+}
+

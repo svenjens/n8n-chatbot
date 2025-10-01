@@ -440,6 +440,37 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Send to n8n for email routing if action requires it
+    if (action && ['service_request_form', 'event_inquiry_form', 'event_modification', 'complaint_form'].includes(action.type)) {
+      try {
+        const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'https://sventest.app.n8n.cloud/webhook/chatguus-email';
+        
+        // Fire-and-forget: send to n8n but don't wait for response
+        fetch(n8nWebhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: action,
+            message: response,
+            userMessage: sanitizedMessage,
+            sessionId: sessionId,
+            url: url,
+            timestamp: new Date().toISOString()
+          })
+        }).catch(err => {
+          // Log but don't fail the chat response
+          console.error('n8n webhook error (non-critical):', err.message);
+        });
+        
+        console.log(`[${sessionId}] Sent to n8n for email routing: ${action.type}`);
+      } catch (n8nError) {
+        // Log but don't fail the chat response
+        console.error('Failed to send to n8n:', n8nError.message);
+      }
+    }
+
     // Return successful response
     return {
       statusCode: 200,

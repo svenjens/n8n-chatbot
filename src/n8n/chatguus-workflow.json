@@ -55,13 +55,11 @@
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": false,
-            "leftValue": "={{ $json.message.toLowerCase() }}",
-            "operation": "contains"
+            "caseSensitive": false
           },
           "conditions": [
             {
-              "leftValue": "={{ $json.message.toLowerCase() }}",
+              "leftValue": "={{ ($json.message || '').toLowerCase() }}",
               "rightValue": "service,verzoek,aanvraag,hulp nodig,probleem",
               "operation": "contains"
             }
@@ -71,7 +69,7 @@
       "id": "service-check-node",
       "name": "Check Service Request",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [1120, 200]
     },
     {
@@ -82,7 +80,7 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $json.message.toLowerCase() }}",
+              "leftValue": "={{ ($json.message || '').toLowerCase() }}",
               "rightValue": "event,evenement,organiseren,feest,bijeenkomst",
               "operation": "contains"
             }
@@ -92,8 +90,29 @@
       "id": "event-check-node",
       "name": "Check Event Inquiry",
       "type": "n8n-nodes-base.if", 
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ ($json.message || '').toLowerCase() }}",
+              "rightValue": "it,technisch,computer,netwerk,software,systeem,inloggen",
+              "operation": "contains"
+            }
+          ]
+        }
+      },
+      "id": "service-category-node",
+      "name": "Determine Service Category",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 100]
     },
     {
       "parameters": {
@@ -111,19 +130,23 @@
             },
             {
               "fieldId": "Session ID", 
-              "fieldValue": "={{ $json.sessionId }}"
+              "fieldValue": "={{ $json.sessionId || 'unknown' }}"
             },
             {
               "fieldId": "Message",
-              "fieldValue": "={{ $json.message }}"
+              "fieldValue": "={{ $json.message || '[Geen bericht]' }}"
             },
             {
               "fieldId": "Category",
-              "fieldValue": "Service Request"
+              "fieldValue": "={{ $json.category || 'Service Request' }}"
             },
             {
               "fieldId": "Status",
               "fieldValue": "New"
+            },
+            {
+              "fieldId": "URL",
+              "fieldValue": "={{ $json.url || 'Onbekend' }}"
             }
           ]
         }
@@ -132,21 +155,234 @@
       "name": "Log to Google Sheets",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
-      "position": [1340, 200]
+      "position": [1560, 200]
     },
     {
       "parameters": {
-        "fromEmail": "noreply@cupolaxs.nl",
-        "toEmail": "={{ $json.routingEmail }}",
-        "subject": "Nieuwe servicevraag via ChatGuusPT",
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.routingEmail || 'welcome@cupolaxs.nl' }}",
+        "subject": "🔧 Nieuwe servicevraag via ChatGuusPT",
         "emailType": "html",
-        "message": "Beste team,<br><br>Er is een nieuwe servicevraag binnengekomen via ChatGuusPT:<br><br><strong>Bericht:</strong><br>{{ $json.message }}<br><br><strong>Sessie ID:</strong> {{ $json.sessionId }}<br><strong>Tijdstip:</strong> {{ $now }}<br><strong>Website:</strong> {{ $json.url }}<br><br>Met vriendelijke groet,<br>ChatGuusPT"
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }\n        .content { background: white; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; }\n        .field { margin-bottom: 15px; }\n        .label { font-weight: bold; color: #495057; }\n        .value { margin-top: 5px; padding: 10px; background: #f8f9fa; border-radius: 4px; }\n        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; font-size: 14px; color: #6c757d; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h2>🔧 Nieuwe Servicevraag</h2>\n            <p>Er is een nieuwe servicevraag binnengekomen via ChatGuusPT</p>\n        </div>\n        \n        <div class=\"content\">\n            <div class=\"field\">\n                <div class=\"label\">📝 Bericht:</div>\n                <div class=\"value\">{{ $json.message || '[Geen bericht]' }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🆔 Sessie ID:</div>\n                <div class=\"value\">{{ $json.sessionId || 'unknown' }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🕐 Tijdstip:</div>\n                <div class=\"value\">{{ $now }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🌐 Website:</div>\n                <div class=\"value\">{{ $json.url || 'Niet beschikbaar' }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">📋 Categorie:</div>\n                <div class=\"value\">{{ $json.category || 'Service Request' }}</div>\n            </div>\n        </div>\n        \n        <div class=\"footer\">\n            <p>Dit bericht is automatisch verzonden door ChatGuusPT.<br>\n            Voor vragen over dit systeem, neem contact op met de IT-afdeling.</p>\n        </div>\n    </div>\n</body>\n</html>"
       },
-      "id": "email-routing-node",
-      "name": "Route Email",
-      "type": "n8n-nodes-base.emailSend",
+      "id": "gmail-service-node",
+      "name": "Gmail - Service Request",
+      "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [1560, 200]
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": "={{ $env.GOOGLE_SHEETS_ID }}",
+        "sheetName": "Event Inquiries",
+        "dataMode": "define",
+        "fieldsUi": {
+          "values": [
+            {
+              "fieldId": "Timestamp",
+              "fieldValue": "={{ $now }}"
+            },
+            {
+              "fieldId": "Session ID", 
+              "fieldValue": "={{ $json.sessionId || 'unknown' }}"
+            },
+            {
+              "fieldId": "Message",
+              "fieldValue": "={{ $json.message || '[Geen bericht]' }}"
+            },
+            {
+              "fieldId": "Category",
+              "fieldValue": "Event Inquiry"
+            },
+            {
+              "fieldId": "Status",
+              "fieldValue": "New"
+            },
+            {
+              "fieldId": "URL",
+              "fieldValue": "={{ $json.url || 'Onbekend' }}"
+            }
+          ]
+        }
+      },
+      "id": "sheets-event-log-node",
+      "name": "Log Event to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "irene@cupolaxs.nl",
+        "subject": "🎉 Nieuwe evenement aanvraag via ChatGuusPT",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }\n        .content { background: white; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; }\n        .field { margin-bottom: 15px; }\n        .label { font-weight: bold; color: #495057; }\n        .value { margin-top: 5px; padding: 10px; background: #f8f9fa; border-radius: 4px; }\n        .highlight { background: #e3f2fd; border-left: 4px solid #2196f3; }\n        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; font-size: 14px; color: #6c757d; }\n        .cta { background: #28a745; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block; margin-top: 15px; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h2>🎉 Nieuwe Evenement Aanvraag</h2>\n            <p>Een potentiële klant is geïnteresseerd in het organiseren van een evenement in de Koepel!</p>\n        </div>\n        \n        <div class=\"content\">\n            <div class=\"field highlight\">\n                <div class=\"label\">💬 Oorspronkelijke vraag:</div>\n                <div class=\"value\">{{ $json.message }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🆔 Sessie ID:</div>\n                <div class=\"value\">{{ $json.sessionId }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🕐 Tijdstip aanvraag:</div>\n                <div class=\"value\">{{ $now }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🌐 Website:</div>\n                <div class=\"value\">{{ $json.url || 'Niet beschikbaar' }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">📋 Volgende stappen:</div>\n                <div class=\"value\">\n                    1. Neem contact op met de klant voor meer details<br>\n                    2. Vraag door naar type evenement en aantal gasten<br>\n                    3. Bespreek beschikbaarheid en mogelijkheden<br>\n                    4. Stuur offerte en planning\n                </div>\n            </div>\n            \n            <a href=\"mailto:{{ $json.sessionId }}@cupolaxs.nl?subject=Re: Evenement aanvraag\" class=\"cta\">📧 Reageer op aanvraag</a>\n        </div>\n        \n        <div class=\"footer\">\n            <p>Dit bericht is automatisch verzonden door ChatGuusPT.<br>\n            De klant verwacht binnen 24 uur een reactie voor optimale service.</p>\n        </div>\n    </div>\n</body>\n</html>"
+      },
+      "id": "gmail-event-node",
+      "name": "Gmail - Event Inquiry",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1780, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Email routing logic met edge case handling\ntry {\n  // Input validation\n  const inputData = $input.first()?.json;\n  if (!inputData) {\n    throw new Error('No input data received');\n  }\n\n  // Safe access to message with fallback\n  const message = (inputData.message || '').toLowerCase().trim();\n  \n  // Validate message exists\n  if (!message) {\n    console.warn('Empty message received, using default routing');\n    return [{\n      json: {\n        ...inputData,\n        routingEmail: 'welcome@cupolaxs.nl',\n        category: 'Algemeen',\n        message: inputData.message || '[Geen bericht]',\n        sessionId: inputData.sessionId || 'unknown',\n        url: inputData.url || 'Onbekend'\n      }\n    }];\n  }\n\n  let routingEmail = 'welcome@cupolaxs.nl'; // default\n  let category = 'Algemeen';\n\n  // IT/Technische problemen\n  if (message.includes('it') || message.includes('technisch') || message.includes('computer') || \n      message.includes('netwerk') || message.includes('software') || message.includes('systeem') ||\n      message.includes('inloggen') || message.includes('wifi') || message.includes('internet') ||\n      message.includes('printer') || message.includes('laptop') || message.includes('monitor')) {\n    routingEmail = 'support@axs-ict.com';\n    category = 'IT Support';\n  }\n  // Schoonmaak gerelateerd\n  else if (message.includes('schoon') || message.includes('vuil') || message.includes('opruimen') ||\n           message.includes('poetsen') || message.includes('stofzuigen') || message.includes('afval') ||\n           message.includes('vuilnis') || message.includes('smerig')) {\n    routingEmail = 'ralphcassa@gmail.com';\n    category = 'Schoonmaak';\n  }\n  // Bestaande evenementen (niet nieuwe)\n  else if ((message.includes('event') || message.includes('evenement')) && \n           (message.includes('bestaand') || message.includes('gepland') || message.includes('komend') ||\n            message.includes('geboekt') || message.includes('reservering'))) {\n    routingEmail = 'welcome@cupolaxs.nl';\n    category = 'Bestaande Events';\n  }\n\n  // Return enriched data with safe defaults\n  return [{\n    json: {\n      ...inputData,\n      routingEmail: routingEmail,\n      category: category,\n      message: inputData.message || '[Geen bericht]',\n      sessionId: inputData.sessionId || 'unknown-' + Date.now(),\n      url: inputData.url || 'Onbekend',\n      timestamp: new Date().toISOString()\n    }\n  }];\n  \n} catch (error) {\n  console.error('Email routing error:', error);\n  // Return safe fallback\n  return [{\n    json: {\n      routingEmail: 'welcome@cupolaxs.nl',\n      category: 'Algemeen - Error',\n      message: $input.first()?.json?.message || '[Fout bij verwerken]',\n      sessionId: $input.first()?.json?.sessionId || 'error-' + Date.now(),\n      url: $input.first()?.json?.url || 'Onbekend',\n      error: error.message,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "email-router-node",
+      "name": "Email Router",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "IT Support",
+                    "operation": "equals"
+                  }
+                ]
+              },
+              "renameOutput": false
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": false
+        }
+      },
+      "id": "switch-it-node",
+      "name": "Route IT Support",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [2000, 100]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "Schoonmaak",
+                    "operation": "equals"
+                  }
+                ]
+              },
+              "renameOutput": false
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": false
+        }
+      },
+      "id": "switch-cleaning-node",
+      "name": "Route Schoonmaak",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "Algemeen",
+                    "operation": "contains"
+                  }
+                ]
+              },
+              "renameOutput": false
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": false,
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "switch-general-node",
+      "name": "Route Algemeen",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "support@axs-ict.com",
+        "subject": "🔧 IT Support - Nieuwe aanvraag via ChatGuusPT",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }\n        .content { background: white; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; }\n        .field { margin-bottom: 15px; }\n        .label { font-weight: bold; color: #495057; }\n        .value { margin-top: 5px; padding: 10px; background: #f8f9fa; border-radius: 4px; }\n        .urgent { background: #fff3cd; border-left: 4px solid #ffc107; }\n        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; font-size: 14px; color: #6c757d; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h2>🔧 IT Support Aanvraag</h2>\n            <p>Nieuwe technische ondersteuning nodig via ChatGuusPT</p>\n        </div>\n        \n        <div class=\"content\">\n            <div class=\"field urgent\">\n                <div class=\"label\">🚨 Technisch probleem:</div>\n                <div class=\"value\">{{ $json.message }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🆔 Ticket ID:</div>\n                <div class=\"value\">{{ $json.sessionId }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🕐 Gemeld op:</div>\n                <div class=\"value\">{{ $now }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🌐 Locatie:</div>\n                <div class=\"value\">{{ $json.url || 'ChatGuusPT Widget' }}</div>\n            </div>\n        </div>\n        \n        <div class=\"footer\">\n            <p><strong>Prioriteit:</strong> Normale support aanvraag<br>\n            <strong>SLA:</strong> Reactie binnen 4 uur tijdens kantooruren</p>\n        </div>\n    </div>\n</body>\n</html>"
+      },
+      "id": "gmail-it-node",
+      "name": "Gmail - IT Support",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [2000, 100]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "ralphcassa@gmail.com",
+        "subject": "🧹 Schoonmaak - Nieuwe aanvraag via ChatGuusPT",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }\n        .content { background: white; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; }\n        .field { margin-bottom: 15px; }\n        .label { font-weight: bold; color: #495057; }\n        .value { margin-top: 5px; padding: 10px; background: #f8f9fa; border-radius: 4px; }\n        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; font-size: 14px; color: #6c757d; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h2>🧹 Schoonmaak Aanvraag</h2>\n            <p>Nieuwe schoonmaak opdracht via ChatGuusPT</p>\n        </div>\n        \n        <div class=\"content\">\n            <div class=\"field\">\n                <div class=\"label\">📝 Schoonmaak verzoek:</div>\n                <div class=\"value\">{{ $json.message }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🆔 Referentie:</div>\n                <div class=\"value\">{{ $json.sessionId }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🕐 Aangevraagd op:</div>\n                <div class=\"value\">{{ $now }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">📍 Locatie:</div>\n                <div class=\"value\">De Koepel - {{ $json.url || 'Via website' }}</div>\n            </div>\n        </div>\n        \n        <div class=\"footer\">\n            <p>Neem contact op met de Koepel voor toegang en specifieke instructies.<br>\n            Bij spoedeisende zaken, bel direct naar het hoofdnummer.</p>\n        </div>\n    </div>\n</body>\n</html>"
+      },
+      "id": "gmail-cleaning-node",
+      "name": "Gmail - Schoonmaak",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "welcome@cupolaxs.nl",
+        "subject": "📋 Algemene aanvraag via ChatGuusPT",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <style>\n        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n        .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n        .header { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }\n        .content { background: white; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px; }\n        .field { margin-bottom: 15px; }\n        .label { font-weight: bold; color: #495057; }\n        .value { margin-top: 5px; padding: 10px; background: #f8f9fa; border-radius: 4px; }\n        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; font-size: 14px; color: #6c757d; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h2>📋 Algemene Aanvraag</h2>\n            <p>Nieuwe klantvraag binnengekomen via ChatGuusPT</p>\n        </div>\n        \n        <div class=\"content\">\n            <div class=\"field\">\n                <div class=\"label\">💬 Klantvraag:</div>\n                <div class=\"value\">{{ $json.message }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🆔 Referentie:</div>\n                <div class=\"value\">{{ $json.sessionId }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🕐 Ontvangen op:</div>\n                <div class=\"value\">{{ $now }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">🌐 Bron:</div>\n                <div class=\"value\">{{ $json.url || 'ChatGuusPT Widget' }}</div>\n            </div>\n            \n            <div class=\"field\">\n                <div class=\"label\">📋 Categorie:</div>\n                <div class=\"value\">{{ $json.category || 'Algemeen' }}</div>\n            </div>\n        </div>\n        \n        <div class=\"footer\">\n            <p>Deze aanvraag is automatisch doorgestuurd door ChatGuusPT.<br>\n            Reageer binnen 24 uur voor optimale klantenservice.</p>\n        </div>\n    </div>\n</body>\n</html>"
+      },
+      "id": "gmail-general-node",
+      "name": "Gmail - Algemeen",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [2000, 300]
     },
     {
       "parameters": {
@@ -157,7 +393,7 @@
       "name": "Send Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1780, 300]
+      "position": [2220, 300]
     }
   ],
   "connections": {
@@ -208,6 +444,17 @@
       "main": [
         [
           {
+            "node": "Determine Service Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Service Category": {
+      "main": [
+        [
+          {
             "node": "Log to Google Sheets",
             "type": "main",
             "index": 0
@@ -219,14 +466,123 @@
       "main": [
         [
           {
-            "node": "Route Email",
+            "node": "Email Router",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Route Email": {
+    "Email Router": {
+      "main": [
+        [
+          {
+            "node": "Route IT Support",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Schoonmaak",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Algemeen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route IT Support": {
+      "main": [
+        [
+          {
+            "node": "Gmail - IT Support",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Schoonmaak": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Schoonmaak",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Algemeen": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Algemeen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - IT Support": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Schoonmaak": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Algemeen": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Event Inquiry": {
+      "main": [
+        [
+          {
+            "node": "Log Event to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Event to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Event Inquiry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Event Inquiry": {
       "main": [
         [
           {

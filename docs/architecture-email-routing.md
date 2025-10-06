@@ -360,3 +360,4 @@ Als je de oude complexe workflow hebt:
 ❌ **Performance**: Extra AI calls kosten tijd
 ❌ **Kosten**: Dubbele OpenAI API calls
 ❌ **Maintenance**: Twee plekken om personality te updaten
+
